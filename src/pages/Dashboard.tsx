@@ -1,35 +1,33 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPLTeam } from '@/data/iplData';
-import { Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp, Shield, X } from 'lucide-react';
 
-// ─── Small helpers ────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getTeam = (id: string): IPLTeam => IPL_TEAMS.find(t => t.id === id)!;
 
-const formatDate = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' });
-};
+const formatDate = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' });
 
-const isPlayoff = (matchNumber: number) => matchNumber >= 71;
-const playoffLabel = (matchNumber: number) => {
-  if (matchNumber === 71) return 'Qualifier 1';
-  if (matchNumber === 72) return 'Eliminator';
-  if (matchNumber === 73) return 'Qualifier 2';
-  if (matchNumber === 74) return '🏆 Final';
-  return `Match ${matchNumber}`;
+const isPlayoff = (n: number) => n >= 71;
+const playoffLabel = (n: number) => {
+  if (n === 71) return 'Qualifier 1';
+  if (n === 72) return 'Eliminator';
+  if (n === 73) return 'Qualifier 2';
+  if (n === 74) return '🏆 Final';
+  return `Match ${n}`;
 };
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string; colorClass: string }> = ({ icon, label, value, colorClass }) => (
-  <div className="card-surface rounded-xl p-4 flex flex-col gap-1.5">
-    <div className={`flex items-center gap-1.5 text-xs text-muted-foreground`}>
+  <div className="card-surface rounded-xl p-3 md:p-4 flex flex-col gap-1.5">
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
       <span className={colorClass}>{icon}</span>
       {label}
     </div>
-    <div className={`font-rajdhani text-2xl font-bold ${colorClass}`}>{value}</div>
+    <div className={`font-rajdhani text-xl md:text-2xl font-bold ${colorClass}`}>{value}</div>
   </div>
 );
 
@@ -42,30 +40,32 @@ const TeamBadge: React.FC<{
   onClick: (id: string) => void;
 }> = ({ team, isFav, onToggleFav, onClick }) => (
   <div
-    className={`card-surface rounded-xl p-4 cursor-pointer transition-all duration-200 border ${isFav ? 'border-primary/50 shadow-[0_0_16px_hsl(150_100%_50%/0.15)]' : 'border-border hover:border-border/80'}`}
+    className={`card-surface rounded-xl p-3 md:p-4 cursor-pointer transition-all duration-200 border ${
+      isFav ? 'border-primary/50 shadow-[0_0_16px_hsl(150_100%_50%/0.15)]' : 'border-border hover:border-border/80'
+    }`}
     onClick={() => onClick(team.id)}
   >
-    <div className="flex items-start justify-between mb-3">
+    <div className="flex items-start justify-between mb-2 md:mb-3">
       <div className="flex items-center gap-2">
-        <span className="text-2xl">{team.emoji}</span>
+        <span className="text-xl md:text-2xl">{team.emoji}</span>
         <div>
-          <div className="font-rajdhani font-bold text-base leading-tight">{team.shortName}</div>
-          <div className="text-muted-foreground text-xs leading-tight line-clamp-1">{team.name}</div>
+          <div className="font-rajdhani font-bold text-sm md:text-base leading-tight">{team.shortName}</div>
+          <div className="text-muted-foreground text-[11px] md:text-xs leading-tight line-clamp-1">{team.name}</div>
         </div>
       </div>
       <button
-        className={`p-1.5 rounded-lg transition-colors ${isFav ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+        className={`p-1 md:p-1.5 rounded-lg transition-colors ${isFav ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
         onClick={e => { e.stopPropagation(); onToggleFav(team.id); }}
         aria-label={isFav ? 'Unfavourite' : 'Favourite'}
       >
-        <Heart className="w-4 h-4" fill={isFav ? 'currentColor' : 'none'} />
+        <Heart className="w-3.5 h-3.5 md:w-4 md:h-4" fill={isFav ? 'currentColor' : 'none'} />
       </button>
     </div>
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-1.5 text-[11px] md:text-xs text-muted-foreground">
       <Trophy className="w-3 h-3 text-yellow-400 shrink-0" />
       <span>{team.titles > 0 ? `${team.titles}× Champ` : 'No titles yet'}</span>
     </div>
-    <div className="text-xs text-muted-foreground mt-1 truncate">
+    <div className="text-[11px] md:text-xs text-muted-foreground mt-1 truncate">
       👤 {team.captain}
     </div>
   </div>
@@ -78,25 +78,27 @@ const TeamDetailSheet: React.FC<{ team: IPLTeam; onClose: () => void }> = ({ tea
   const visiblePlayers = showAll ? team.players : team.players.slice(0, 5);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       <div
-        className="relative z-10 bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative z-10 bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg lg:max-w-xl max-h-[92vh] sm:max-h-[85vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-card border-b border-border px-5 py-4 flex items-center justify-between rounded-t-2xl sm:rounded-t-2xl">
+        <div className="sticky top-0 bg-card border-b border-border px-4 md:px-5 py-3 md:py-4 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{team.emoji}</span>
+            <span className="text-2xl md:text-3xl">{team.emoji}</span>
             <div>
-              <div className="font-rajdhani font-bold text-xl leading-tight">{team.name}</div>
+              <div className="font-rajdhani font-bold text-lg md:text-xl leading-tight">{team.name}</div>
               <div className="text-muted-foreground text-xs">{team.city} · {team.homeGround}</div>
             </div>
           </div>
-          <button className="text-muted-foreground p-2 rounded-lg hover:text-foreground" onClick={onClose}>✕</button>
+          <button className="text-muted-foreground p-2 rounded-lg hover:text-foreground" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-4 md:p-5 space-y-4 md:space-y-5">
           {/* Titles */}
           <div className="flex flex-wrap gap-2">
             {team.titles > 0 ? (
@@ -111,7 +113,7 @@ const TeamDetailSheet: React.FC<{ team: IPLTeam; onClose: () => void }> = ({ tea
           </div>
 
           {/* Info row */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
             <div className="card-surface-elevated rounded-lg p-3">
               <div className="text-xs text-muted-foreground mb-1">Captain</div>
               <div className="font-rajdhani font-bold text-sm">{team.captain}</div>
@@ -143,13 +145,13 @@ const TeamDetailSheet: React.FC<{ team: IPLTeam; onClose: () => void }> = ({ tea
             </h4>
             <div className="space-y-2">
               {visiblePlayers.map((p, i) => (
-                <div key={i} className="card-surface-elevated rounded-lg px-3 py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {p.isStar && <span className="text-yellow-400 text-xs">⭐</span>}
-                    <span className="font-medium text-sm">{p.name}</span>
+                <div key={i} className="card-surface-elevated rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {p.isStar && <span className="text-yellow-400 text-xs shrink-0">⭐</span>}
+                    <span className="font-medium text-sm truncate">{p.name}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{p.role}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs text-muted-foreground hidden xs:block">{p.role}</span>
                     <span className="text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground">{p.nationality}</span>
                   </div>
                 </div>
@@ -170,10 +172,9 @@ const TeamDetailSheet: React.FC<{ team: IPLTeam; onClose: () => void }> = ({ tea
   );
 };
 
-// ─── Match Schedule Row ───────────────────────────────────────────────────────
+// ─── Match Row ────────────────────────────────────────────────────────────────
 
 const MatchRow: React.FC<{
-  matchId: string;
   matchNumber: number;
   team1Id: string;
   team2Id: string;
@@ -183,59 +184,62 @@ const MatchRow: React.FC<{
   city: string;
   status: string;
   favTeamId: string | null;
-}> = ({ matchId, matchNumber, team1Id, team2Id, date, time, venue, city, status, favTeamId }) => {
+}> = ({ matchNumber, team1Id, team2Id, date, time, venue, city, status, favTeamId }) => {
   const t1 = getTeam(team1Id);
   const t2 = getTeam(team2Id);
   const playoff = isPlayoff(matchNumber);
   const hasFav = favTeamId && (team1Id === favTeamId || team2Id === favTeamId);
 
   return (
-    <div className={`card-surface rounded-xl p-4 transition-all ${hasFav ? 'border-primary/40 shadow-[0_0_12px_hsl(150_100%_50%/0.1)]' : ''}`}>
-      <div className="flex items-start justify-between mb-3 gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${playoff ? 'bg-yellow-400/10 border-yellow-400/30 text-yellow-400' : 'bg-muted border-border text-muted-foreground'}`}>
-            {playoff ? playoffLabel(matchNumber) : `Match ${matchNumber}`}
+    <div className={`card-surface rounded-xl p-3 md:p-4 transition-all ${hasFav ? 'border-primary/40 shadow-[0_0_12px_hsl(150_100%_50%/0.1)]' : ''}`}>
+      {/* Top row: badges + date */}
+      <div className="flex items-start justify-between mb-2 md:mb-3 gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-[11px] md:text-xs px-2 py-0.5 rounded-full font-medium border ${playoff ? 'bg-yellow-400/10 border-yellow-400/30 text-yellow-400' : 'bg-muted border-border text-muted-foreground'}`}>
+            {playoff ? playoffLabel(matchNumber) : `M${matchNumber}`}
           </span>
           {hasFav && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-primary flex items-center gap-1">
-              <Heart className="w-2.5 h-2.5" fill="currentColor" /> Your Team
+            <span className="text-[11px] md:text-xs px-2 py-0.5 rounded-full bg-primary/10 border border-primary/30 text-primary flex items-center gap-1">
+              <Heart className="w-2.5 h-2.5" fill="currentColor" /> Fav
             </span>
           )}
           {status === 'live' && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 flex items-center gap-1">
+            <span className="text-[11px] md:text-xs px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 flex items-center gap-1">
               <span className="live-pulse w-1.5 h-1.5 bg-red-400 rounded-full inline-block" /> LIVE
             </span>
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-xs font-semibold text-foreground">{formatDate(date)}</div>
-          <div className="text-xs text-muted-foreground">{time} IST</div>
+          <div className="text-[11px] md:text-xs font-semibold text-foreground">{formatDate(date)}</div>
+          <div className="text-[11px] md:text-xs text-muted-foreground">{time} IST</div>
         </div>
       </div>
 
+      {/* Teams row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-xl shrink-0">{t1.emoji}</span>
+        <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
+          <span className="text-lg md:text-xl shrink-0">{t1.emoji}</span>
           <div className="min-w-0">
-            <div className="font-rajdhani font-bold text-base leading-tight">{t1.shortName}</div>
-            <div className="text-xs text-muted-foreground truncate">{t1.name}</div>
+            <div className="font-rajdhani font-bold text-sm md:text-base leading-tight">{t1.shortName}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground truncate hidden sm:block">{t1.name}</div>
           </div>
         </div>
 
-        <div className="text-center px-2 shrink-0">
+        <div className="text-center px-1.5 md:px-2 shrink-0">
           <div className="font-rajdhani text-xs text-muted-foreground font-bold">VS</div>
         </div>
 
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0 justify-end">
           <div className="min-w-0 text-right">
-            <div className="font-rajdhani font-bold text-base leading-tight">{t2.shortName}</div>
-            <div className="text-xs text-muted-foreground truncate">{t2.name}</div>
+            <div className="font-rajdhani font-bold text-sm md:text-base leading-tight">{t2.shortName}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground truncate hidden sm:block">{t2.name}</div>
           </div>
-          <span className="text-xl shrink-0">{t2.emoji}</span>
+          <span className="text-lg md:text-xl shrink-0">{t2.emoji}</span>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+      {/* Venue */}
+      <div className="mt-2 md:mt-3 flex items-center gap-1.5 text-[11px] md:text-xs text-muted-foreground">
         <Shield className="w-3 h-3 shrink-0" />
         <span className="truncate">{venue}, {city}</span>
       </div>
@@ -272,7 +276,7 @@ const Dashboard: React.FC = () => {
   const selectedTeam = selectedTeamId ? IPL_TEAMS.find(t => t.id === selectedTeamId) : null;
 
   return (
-    <div className="min-h-screen bg-background pt-16 pb-20">
+    <div className="min-h-screen bg-background pt-16 pb-6">
 
       {/* Live Ticker */}
       <div className="bg-surface border-b border-border overflow-hidden">
@@ -288,35 +292,39 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      {/* Page content: single column on mobile, wider on larger screens */}
+      <div className="container mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-6 max-w-5xl">
 
-        {/* IPL 2026 Hero Banner */}
-        <div className="card-surface rounded-2xl p-5 mb-6 border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
-          <div className="flex items-start justify-between mb-3">
+        {/* ── IPL Hero Banner ──────────────────────────────────── */}
+        <div className="card-surface rounded-2xl p-4 md:p-6 mb-5 md:mb-6 border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
+          <div className="flex items-start justify-between mb-3 md:mb-4">
             <div>
               <div className="text-xs text-primary font-semibold tracking-widest uppercase mb-1">Season {IPL_INFO.season}</div>
-              <h1 className="font-rajdhani text-3xl font-bold leading-tight">
+              <h1 className="font-rajdhani text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">
                 IPL <span className="neon-text-green">{IPL_INFO.year}</span>
               </h1>
-              <p className="text-muted-foreground text-sm mt-1">{IPL_INFO.tagline}</p>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-1">{IPL_INFO.tagline}</p>
             </div>
-            <div className="text-4xl">🏆</div>
+            <div className="text-3xl md:text-5xl">🏆</div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-3">
+
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
             <div className="bg-muted/50 rounded-lg p-2.5 text-center">
-              <div className="font-rajdhani text-xl font-bold text-primary">{IPL_INFO.totalMatches}</div>
-              <div className="text-xs text-muted-foreground">Total Matches</div>
+              <div className="font-rajdhani text-lg md:text-xl font-bold text-primary">{IPL_INFO.totalMatches}</div>
+              <div className="text-[11px] md:text-xs text-muted-foreground">Total Matches</div>
             </div>
             <div className="bg-muted/50 rounded-lg p-2.5 text-center">
-              <div className="font-rajdhani text-xl font-bold text-secondary">{IPL_INFO.totalTeams}</div>
-              <div className="text-xs text-muted-foreground">Teams</div>
+              <div className="font-rajdhani text-lg md:text-xl font-bold text-secondary">{IPL_INFO.totalTeams}</div>
+              <div className="text-[11px] md:text-xs text-muted-foreground">Teams</div>
             </div>
-            <div className="bg-muted/50 rounded-lg p-2.5 text-center col-span-2">
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center col-span-2 sm:col-span-2">
               <div className="font-rajdhani text-sm font-bold text-yellow-400">{IPL_INFO.startDate} → {IPL_INFO.endDate}</div>
-              <div className="text-xs text-muted-foreground">Season Dates</div>
+              <div className="text-[11px] md:text-xs text-muted-foreground">Season Dates</div>
             </div>
           </div>
-          <ul className="mt-3 space-y-1">
+
+          <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             {IPL_INFO.highlights.map((h, i) => (
               <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                 <span className="text-primary shrink-0 mt-0.5">•</span>{h}
@@ -325,134 +333,143 @@ const Dashboard: React.FC = () => {
           </ul>
         </div>
 
-        {/* User Stats */}
-        {user && (
-          <>
-            <div className="mb-1.5">
-              <p className="font-rajdhani text-lg font-bold">
-                Welcome, <span className="neon-text-green">{user.username}</span> 👋
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <StatCard icon={<Trophy className="w-4 h-4" />} label="Points" value={user.points.toLocaleString()} colorClass="text-secondary" />
-              <StatCard icon={<span className="text-sm">🪙</span>} label="Coins" value={user.coins.toLocaleString()} colorClass="text-yellow-400" />
-              <StatCard icon={<Zap className="w-4 h-4" />} label="Streak" value={`${user.streak} 🔥`} colorClass="text-neon-orange" />
-              <StatCard icon={<Target className="w-4 h-4" />} label="Accuracy" value={`${accuracy}%`} colorClass="text-primary" />
-            </div>
-            {/* Level bar */}
-            <div className="card-surface rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-rajdhani font-bold">{user.levelName} <span className="text-muted-foreground text-sm font-normal">Lv.{user.level}</span></span>
-                <span className="text-xs text-muted-foreground">{3000 - (user.points % 3000)} pts to next</span>
+        {/* ── Two-column layout on tablet/desktop ─────────────── */}
+        <div className="lg:grid lg:grid-cols-5 lg:gap-6">
+
+          {/* ── Left column: User stats + Teams ─────────────────── */}
+          <div className="lg:col-span-2">
+
+            {/* User Stats */}
+            {user && (
+              <>
+                <div className="mb-1.5">
+                  <p className="font-rajdhani text-base md:text-lg font-bold">
+                    Welcome, <span className="neon-text-green">{user.username}</span> 👋
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 md:gap-3 mb-3 md:mb-4">
+                  <StatCard icon={<Trophy className="w-4 h-4" />} label="Points" value={user.points.toLocaleString()} colorClass="text-secondary" />
+                  <StatCard icon={<span className="text-sm">🪙</span>} label="Coins" value={user.coins.toLocaleString()} colorClass="text-yellow-400" />
+                  <StatCard icon={<Zap className="w-4 h-4" />} label="Streak" value={`${user.streak} 🔥`} colorClass="text-neon-orange" />
+                  <StatCard icon={<Target className="w-4 h-4" />} label="Accuracy" value={`${accuracy}%`} colorClass="text-primary" />
+                </div>
+                {/* Level bar */}
+                <div className="card-surface rounded-xl p-3 md:p-4 mb-5 md:mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-rajdhani font-bold text-sm md:text-base">{user.levelName} <span className="text-muted-foreground text-xs md:text-sm font-normal">Lv.{user.level}</span></span>
+                    <span className="text-xs text-muted-foreground">{3000 - (user.points % 3000)} pts to next</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-700 shadow-neon-green" style={{ width: `${levelProgress}%` }} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Teams Section */}
+            <div className="mb-5 md:mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-rajdhani text-lg md:text-xl font-bold flex items-center gap-2">
+                  <Users className="w-4 h-4 md:w-5 md:h-5 text-secondary" /> IPL 2026 Teams
+                </h2>
+                <span className="text-[11px] md:text-xs text-muted-foreground">Tap ♥ to fav</span>
               </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full transition-all duration-700 shadow-neon-green" style={{ width: `${levelProgress}%` }} />
+              <div className="grid grid-cols-2 gap-2 md:gap-3">
+                {IPL_TEAMS.map(team => (
+                  <TeamBadge
+                    key={team.id}
+                    team={team}
+                    isFav={favTeamId === team.id}
+                    onToggleFav={toggleFav}
+                    onClick={setSelectedTeamId}
+                  />
+                ))}
               </div>
             </div>
-          </>
-        )}
 
-        {/* ── Teams Section ───────────────────────────────────── */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-rajdhani text-xl font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-secondary" /> IPL 2026 Teams
-            </h2>
-            <span className="text-xs text-muted-foreground">Tap ♥ to favourite</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {IPL_TEAMS.map(team => (
-              <TeamBadge
-                key={team.id}
-                team={team}
-                isFav={favTeamId === team.id}
-                onToggleFav={toggleFav}
-                onClick={setSelectedTeamId}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* ── Schedule Section ────────────────────────────────── */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="w-5 h-5 text-secondary" />
-            <h2 className="font-rajdhani text-xl font-bold">Match Schedule</h2>
+            {/* Daily Bonus */}
+            <div className="card-surface rounded-xl p-3 md:p-4 border border-yellow-400/20 mb-5 lg:mb-0">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-yellow-400/10 flex items-center justify-center text-lg md:text-xl shrink-0">🎁</div>
+                  <div>
+                    <div className="font-rajdhani font-bold text-sm">Daily Login Bonus</div>
+                    <div className="text-xs text-muted-foreground">Day {user?.loginStreak || 1} — Claim reward!</div>
+                  </div>
+                </div>
+                <button className="shrink-0 px-3 md:px-4 py-1.5 md:py-2 bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 font-rajdhani font-bold text-sm rounded-lg hover:bg-yellow-400/20 transition-colors">
+                  +{((user?.loginStreak || 1) * 50 + 50)} Coins
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Filter tabs */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
-            {/* All / Fav toggle */}
-            <div className="flex shrink-0 bg-muted rounded-lg p-1 gap-1">
-              <button
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'all' ? 'bg-card text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
-                onClick={() => setActiveTab('all')}
-              >All</button>
-              <button
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1 ${activeTab === 'fav' ? 'bg-card text-primary shadow' : 'text-muted-foreground hover:text-foreground'}`}
-                onClick={() => setActiveTab('fav')}
-              >
-                <Heart className="w-3 h-3" fill={activeTab === 'fav' ? 'currentColor' : 'none'} />
-                {favTeamId ? getTeam(favTeamId).shortName : 'My Team'}
-              </button>
+          {/* ── Right column (or full width on mobile): Schedule ── */}
+          <div className="lg:col-span-3">
+            <div className="flex items-center gap-2 mb-3 mt-5 lg:mt-0">
+              <Calendar className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
+              <h2 className="font-rajdhani text-lg md:text-xl font-bold">Match Schedule</h2>
+              <span className="ml-auto text-xs text-muted-foreground">{filteredSchedule.length} matches</span>
             </div>
 
-            {/* Group / Playoff */}
-            <div className="flex shrink-0 bg-muted rounded-lg p-1 gap-1">
-              {(['all', 'group', 'playoffs'] as const).map(f => (
+            {/* Filter tabs */}
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
+              {/* All / Fav toggle */}
+              <div className="flex shrink-0 bg-muted rounded-lg p-1 gap-1">
                 <button
-                  key={f}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${scheduleFilter === f ? 'bg-card text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
-                  onClick={() => setScheduleFilter(f)}
-                >{f}</button>
-              ))}
-            </div>
-          </div>
+                  className={`px-2.5 md:px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === 'all' ? 'bg-card text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
+                  onClick={() => setActiveTab('all')}
+                >All</button>
+                <button
+                  className={`px-2.5 md:px-3 py-1.5 rounded-md text-xs font-semibold transition-all flex items-center gap-1 ${activeTab === 'fav' ? 'bg-card text-primary shadow' : 'text-muted-foreground hover:text-foreground'}`}
+                  onClick={() => setActiveTab('fav')}
+                >
+                  <Heart className="w-3 h-3" fill={activeTab === 'fav' ? 'currentColor' : 'none'} />
+                  {favTeamId ? getTeam(favTeamId).shortName : 'My Team'}
+                </button>
+              </div>
 
-          {activeTab === 'fav' && !favTeamId ? (
-            <div className="card-surface rounded-xl p-8 text-center">
-              <Heart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="font-rajdhani font-bold text-lg mb-1">No favourite team yet</p>
-              <p className="text-muted-foreground text-sm">Tap the ♥ on any team above to see only their matches here.</p>
-            </div>
-          ) : filteredSchedule.length === 0 ? (
-            <div className="card-surface rounded-xl p-8 text-center">
-              <p className="text-muted-foreground text-sm">No matches found for the selected filters.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredSchedule.map(m => (
-                <MatchRow
-                  key={m.id}
-                  matchId={m.id}
-                  matchNumber={m.matchNumber}
-                  team1Id={m.team1Id}
-                  team2Id={m.team2Id}
-                  date={m.date}
-                  time={m.time}
-                  venue={m.venue}
-                  city={m.city}
-                  status={m.status}
-                  favTeamId={favTeamId}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Daily Bonus */}
-        <div className="mt-6 card-surface rounded-xl p-4 border border-yellow-400/20">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-yellow-400/10 flex items-center justify-center text-xl shrink-0">🎁</div>
-              <div>
-                <div className="font-rajdhani font-bold text-sm">Daily Login Bonus</div>
-                <div className="text-xs text-muted-foreground">Day {user?.loginStreak || 1} — Claim reward!</div>
+              {/* Group / Playoff */}
+              <div className="flex shrink-0 bg-muted rounded-lg p-1 gap-1">
+                {(['all', 'group', 'playoffs'] as const).map(f => (
+                  <button
+                    key={f}
+                    className={`px-2.5 md:px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${scheduleFilter === f ? 'bg-card text-foreground shadow' : 'text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setScheduleFilter(f)}
+                  >{f}</button>
+                ))}
               </div>
             </div>
-            <button className="shrink-0 px-4 py-2 bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 font-rajdhani font-bold text-sm rounded-lg hover:bg-yellow-400/20 transition-colors">
-              +{((user?.loginStreak || 1) * 50 + 50)} Coins
-            </button>
+
+            {/* Schedule list */}
+            {activeTab === 'fav' && !favTeamId ? (
+              <div className="card-surface rounded-xl p-6 md:p-8 text-center">
+                <Heart className="w-8 h-8 md:w-10 md:h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="font-rajdhani font-bold text-base md:text-lg mb-1">No favourite team yet</p>
+                <p className="text-muted-foreground text-xs md:text-sm">Tap the ♥ on any team above to see only their matches here.</p>
+              </div>
+            ) : filteredSchedule.length === 0 ? (
+              <div className="card-surface rounded-xl p-6 md:p-8 text-center">
+                <p className="text-muted-foreground text-sm">No matches found for the selected filters.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 md:space-y-3 max-h-[70vh] lg:max-h-none overflow-y-auto no-scrollbar lg:overflow-visible">
+                {filteredSchedule.map(m => (
+                  <MatchRow
+                    key={m.id}
+                    matchNumber={m.matchNumber}
+                    team1Id={m.team1Id}
+                    team2Id={m.team2Id}
+                    date={m.date}
+                    time={m.time}
+                    venue={m.venue}
+                    city={m.city}
+                    status={m.status}
+                    favTeamId={favTeamId}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
