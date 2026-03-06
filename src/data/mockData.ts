@@ -24,75 +24,36 @@ export const MOCK_USER: User = {
   ],
 };
 
+// IPL 2026 live match for the prediction page
 export const MOCK_MATCHES: Match[] = [
   {
     id: '1',
-    team1: 'India', team1Short: 'IND', team1Flag: '🇮🇳',
-    team2: 'Australia', team2Short: 'AUS', team2Flag: '🇦🇺',
+    team1: 'Mumbai Indians', team1Short: 'MI', team1Flag: '💙',
+    team2: 'Chennai Super Kings', team2Short: 'CSK', team2Flag: '🦁',
     status: 'live',
     score1: '187/4', score2: '—',
     overs: '18.3',
     runRate: 10.1,
     venue: 'Wankhede Stadium, Mumbai',
-    matchType: 'T20I',
+    matchType: 'IPL 2026',
     startTime: 'LIVE',
-    battingTeam: 'IND',
-  },
-  {
-    id: '2',
-    team1: 'England', team1Short: 'ENG', team1Flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-    team2: 'South Africa', team2Short: 'SA', team2Flag: '🇿🇦',
-    status: 'live',
-    score1: '—', score2: '142/6',
-    overs: '16.2',
-    runRate: 8.7,
-    venue: 'Edgbaston, Birmingham',
-    matchType: 'T20I',
-    startTime: 'LIVE',
-    battingTeam: 'SA',
-  },
-  {
-    id: '3',
-    team1: 'Pakistan', team1Short: 'PAK', team1Flag: '🇵🇰',
-    team2: 'New Zealand', team2Short: 'NZ', team2Flag: '🇳🇿',
-    status: 'upcoming',
-    venue: 'Gaddafi Stadium, Lahore',
-    matchType: 'ODI',
-    startTime: 'Today 7:30 PM',
-  },
-  {
-    id: '4',
-    team1: 'West Indies', team1Short: 'WI', team1Flag: '🌴',
-    team2: 'Sri Lanka', team2Short: 'SL', team2Flag: '🇱🇰',
-    status: 'upcoming',
-    venue: 'Kensington Oval, Barbados',
-    matchType: 'T20I',
-    startTime: 'Tomorrow 2:00 PM',
-  },
-  {
-    id: '5',
-    team1: 'Bangladesh', team1Short: 'BAN', team1Flag: '🇧🇩',
-    team2: 'Afghanistan', team2Short: 'AFG', team2Flag: '🇦🇫',
-    status: 'upcoming',
-    venue: 'Shere Bangla, Dhaka',
-    matchType: 'T20I',
-    startTime: 'Tomorrow 6:00 PM',
+    battingTeam: 'MI',
   },
 ];
 
 export const MOCK_BALL_EVENTS: BallEvent[] = [
-  { over: 18, ball: 1, runs: 1, type: 'run', batsman: 'Kohli', bowler: 'Starc', commentary: 'Clipped to fine leg for a single' },
-  { over: 18, ball: 2, runs: 4, type: 'boundary', batsman: 'Kohli', bowler: 'Starc', commentary: 'Driven through the covers! Beautiful!' },
-  { over: 18, ball: 3, runs: 0, type: 'dot', batsman: 'Kohli', bowler: 'Starc', commentary: 'Dot ball, good length delivery defended' },
-  { over: 18, ball: 4, runs: 6, type: 'six', batsman: 'Hardik', bowler: 'Starc', commentary: 'MASSIVE SIX over long on!' },
-  { over: 18, ball: 5, runs: 1, type: 'run', batsman: 'Hardik', bowler: 'Starc', commentary: 'Quick single to mid-wicket' },
-  { over: 18, ball: 6, runs: 0, type: 'wicket', batsman: 'Hardik', bowler: 'Starc', commentary: 'WICKET! Caught at third man!' },
-  { over: 17, ball: 1, runs: 4, type: 'boundary', batsman: 'Kohli', bowler: 'Cummins', commentary: 'Flicked off the pads for four!' },
-  { over: 17, ball: 2, runs: 2, type: 'run', batsman: 'Kohli', bowler: 'Cummins', commentary: 'Two runs to deep mid-wicket' },
-  { over: 17, ball: 3, runs: 0, type: 'dot', batsman: 'Kohli', bowler: 'Cummins', commentary: 'Defended on the off side' },
-  { over: 17, ball: 4, runs: 6, type: 'six', batsman: 'Kohli', bowler: 'Cummins', commentary: 'KOHLI GOES AERIAL! Six over long off!' },
-  { over: 17, ball: 5, runs: 1, type: 'run', batsman: 'Kohli', bowler: 'Cummins', commentary: 'Nudged for a single' },
-  { over: 17, ball: 6, runs: 4, type: 'boundary', batsman: 'Kohli', bowler: 'Cummins', commentary: 'Punched through covers for FOUR!' },
+  { over: 18, ball: 1, runs: 1, type: 'run', batsman: 'Rohit Sharma', bowler: 'Deepak Chahar', commentary: 'Clipped to fine leg for a single' },
+  { over: 18, ball: 2, runs: 4, type: 'boundary', batsman: 'Rohit Sharma', bowler: 'Deepak Chahar', commentary: 'Driven through the covers! Beautiful!' },
+  { over: 18, ball: 3, runs: 0, type: 'dot', batsman: 'Rohit Sharma', bowler: 'Deepak Chahar', commentary: 'Dot ball, good length delivery defended' },
+  { over: 18, ball: 4, runs: 6, type: 'six', batsman: 'Suryakumar', bowler: 'Deepak Chahar', commentary: 'MASSIVE SIX over long on!' },
+  { over: 18, ball: 5, runs: 1, type: 'run', batsman: 'Suryakumar', bowler: 'Deepak Chahar', commentary: 'Quick single to mid-wicket' },
+  { over: 18, ball: 6, runs: 0, type: 'wicket', batsman: 'Suryakumar', bowler: 'Deepak Chahar', commentary: 'WICKET! Caught at third man!' },
+  { over: 17, ball: 1, runs: 4, type: 'boundary', batsman: 'Rohit Sharma', bowler: 'Jadeja', commentary: 'Flicked off the pads for four!' },
+  { over: 17, ball: 2, runs: 2, type: 'run', batsman: 'Rohit Sharma', bowler: 'Jadeja', commentary: 'Two runs to deep mid-wicket' },
+  { over: 17, ball: 3, runs: 0, type: 'dot', batsman: 'Rohit Sharma', bowler: 'Jadeja', commentary: 'Defended on the off side' },
+  { over: 17, ball: 4, runs: 6, type: 'six', batsman: 'Rohit Sharma', bowler: 'Jadeja', commentary: 'ROHIT GOES AERIAL! Six over long off!' },
+  { over: 17, ball: 5, runs: 1, type: 'run', batsman: 'Rohit Sharma', bowler: 'Jadeja', commentary: 'Nudged for a single' },
+  { over: 17, ball: 6, runs: 4, type: 'boundary', batsman: 'Rohit Sharma', bowler: 'Jadeja', commentary: 'Punched through covers for FOUR!' },
 ];
 
 export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
@@ -110,8 +71,8 @@ export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 
 export const LEVELS = [
   { level: 1, name: 'Rookie', minPoints: 0, color: 'text-muted-foreground' },
-  { level: 2, name: 'Fan', minPoints: 1000, color: 'text-neon-blue' },
-  { level: 3, name: 'Expert', minPoints: 5000, color: 'text-neon-green' },
+  { level: 2, name: 'Fan', minPoints: 1000, color: 'text-secondary' },
+  { level: 3, name: 'Expert', minPoints: 5000, color: 'text-primary' },
   { level: 4, name: 'Master', minPoints: 15000, color: 'text-neon-orange' },
   { level: 5, name: 'Legend', minPoints: 30000, color: 'text-yellow-400' },
 ];
