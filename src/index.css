@@ -158,3 +158,7 @@
 ::-webkit-scrollbar-track { background: hsl(var(--background)); }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--neon-green) / 0.5); }
+
+/* Hide scrollbar for horizontal filter strips */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
