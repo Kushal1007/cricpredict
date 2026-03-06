@@ -105,12 +105,12 @@ export const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 pt-16">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 pt-14 md:pt-16 pb-8">
       <div className="w-full max-w-md">
-        <button onClick={() => setCurrentPage('landing')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
+        <button onClick={() => setCurrentPage('landing')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 md:mb-8 transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <div className="card-surface rounded-2xl p-8 glow-border-green">
+        <div className="card-surface rounded-2xl p-5 md:p-8 glow-border-green">
           <div className="text-center mb-8">
             <div className="text-4xl mb-3">🏆</div>
             <h1 className="font-rajdhani text-3xl font-bold mb-1">Create Account</h1>
