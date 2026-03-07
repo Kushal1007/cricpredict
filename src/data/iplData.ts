@@ -467,3 +467,28 @@ export const IPL_INFO = {
     'Day-Night double headers every weekend',
   ],
 };
+
+export interface PointsTableEntry {
+  teamId: string;
+  played: number;
+  won: number;
+  lost: number;
+  nr: number;   // no result
+  pts: number;
+  nrr: number;  // net run rate
+  form: ('W' | 'L' | 'NR')[]; // last 5
+}
+
+// Pre-season standings — will update as matches are played
+export const IPL_POINTS_TABLE: PointsTableEntry[] = [
+  { teamId: 'mi',   played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'csk',  played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'rcb',  played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'kkr',  played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'dc',   played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'srh',  played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'rr',   played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'pbks', played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'lsg',  played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+  { teamId: 'gt',   played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr:  0.000, form: [] },
+];
