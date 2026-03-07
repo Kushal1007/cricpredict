@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPLTeam } from '@/data/iplData';
-import { Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp, Shield, X } from 'lucide-react';
+import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPLTeam, PointsTableEntry } from '@/data/iplData';
+import { Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp, Shield, X, TrendingUp } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
