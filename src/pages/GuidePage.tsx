@@ -62,7 +62,7 @@ const phases = [
     title: 'Innings Break',
     subtitle: 'Between the two innings',
     description:
-      'The most exciting window. You know exactly what the target is. Predict how the chase will unfold, who will anchor it, and whether there\'ll be a last-over thriller.',
+      "The most exciting window. You know exactly what the target is. Predict how the chase will unfold, who will anchor it, and whether there will be a last-over thriller.",
     examples: [
       { q: 'Chase result?', opts: ['Win with 10+ balls left (2×)', 'Win last over (4×)', 'Lose (2×)'] },
       { q: 'Player of the Match?', opts: ['Kohli (3×)', 'Bumrah (3.5×)', 'Jadeja (4×)', 'Other (5×)'] },

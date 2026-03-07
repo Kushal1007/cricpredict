@@ -28,6 +28,7 @@ const AppRouter = () => {
       case 'live-match': return <LiveMatchPage />;
       case 'leaderboard': return <LeaderboardPage />;
       case 'profile': return <ProfilePage />;
+      case 'guide': return <GuidePage />;
       default: return <LandingPage />;
     }
   };

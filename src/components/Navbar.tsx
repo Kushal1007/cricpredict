@@ -12,10 +12,12 @@ const Navbar: React.FC = () => {
         { label: 'Live Matches', page: 'matches' },
         { label: 'Leaderboard', page: 'leaderboard' },
         { label: 'Profile', page: 'profile' },
+        { label: 'How to Play', page: 'guide' },
       ]
     : [
         { label: 'Features', page: 'landing' },
         { label: 'Leaderboard', page: 'leaderboard' },
+        { label: 'How to Play', page: 'guide' },
       ];
 
   const close = () => setMobileOpen(false);
