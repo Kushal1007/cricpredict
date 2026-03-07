@@ -449,6 +449,9 @@ const Dashboard: React.FC = () => {
           </ul>
         </div>
 
+        {/* ── Points Table ─────────────────────────────────────── */}
+        <PointsTable favTeamId={favTeamId} />
+
         {/* ── Two-column layout on tablet/desktop ─────────────── */}
         <div className="lg:grid lg:grid-cols-5 lg:gap-6">
 
