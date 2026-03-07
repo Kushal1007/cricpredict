@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPLTeam } from '@/data/iplData';
-import { Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp, Shield, X } from 'lucide-react';
+import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPLTeam, PointsTableEntry } from '@/data/iplData';
+import { Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp, Shield, X, TrendingUp } from 'lucide-react';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -17,6 +17,122 @@ const playoffLabel = (n: number) => {
   if (n === 73) return 'Qualifier 2';
   if (n === 74) return '🏆 Final';
   return `Match ${n}`;
+};
+
+// ─── Points Table ─────────────────────────────────────────────────────────────
+
+const FormBadge: React.FC<{ result: 'W' | 'L' | 'NR' }> = ({ result }) => {
+  const styles = result === 'W'
+    ? 'bg-primary/20 text-primary border-primary/30'
+    : result === 'L'
+    ? 'bg-destructive/20 text-destructive border-destructive/30'
+    : 'bg-muted text-muted-foreground border-border';
+  return (
+    <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold border ${styles}`}>
+      {result}
+    </span>
+  );
+};
+
+const PointsTable: React.FC<{ favTeamId: string | null }> = ({ favTeamId }) => {
+  const [expanded, setExpanded] = useState(false);
+  const rows = IPL_POINTS_TABLE
+    .map(entry => ({ entry, team: IPL_TEAMS.find(t => t.id === entry.teamId)! }))
+    .sort((a, b) => b.entry.pts - a.entry.pts || b.entry.nrr - a.entry.nrr);
+
+  const visibleRows = expanded ? rows : rows.slice(0, 5);
+  const seasonStarted = rows.some(r => r.entry.played > 0);
+
+  return (
+    <div className="mb-5 md:mb-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-rajdhani text-lg md:text-xl font-bold flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
+          Points Table
+        </h2>
+        <span className="text-[11px] md:text-xs text-muted-foreground bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 px-2 py-0.5 rounded-full font-semibold">
+          IPL 2026
+        </span>
+      </div>
+
+      <div className="card-surface rounded-xl overflow-hidden">
+        {/* Column headers */}
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 md:gap-x-3 px-3 md:px-4 py-2 border-b border-border bg-muted/40 text-[10px] md:text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+          <span>Team</span>
+          <span className="text-center w-7 md:w-8">P</span>
+          <span className="text-center w-7 md:w-8">W</span>
+          <span className="text-center w-7 md:w-8">L</span>
+          <span className="text-center w-10 md:w-12">NRR</span>
+          <span className="text-center w-8 md:w-9 text-yellow-400">Pts</span>
+        </div>
+
+        {/* Rows */}
+        {visibleRows.map(({ entry, team }, idx) => {
+          const rank = idx + 1;
+          const isFav = team.id === favTeamId;
+          const isQualified = !seasonStarted ? false : rank <= 4;
+          return (
+            <div
+              key={team.id}
+              className={`grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 md:gap-x-3 px-3 md:px-4 py-2.5 border-b border-border/50 last:border-0 transition-colors items-center
+                ${isFav ? 'bg-primary/5 border-primary/20' : ''}
+                ${isQualified && rank === 4 ? 'border-b-2 border-b-primary/40' : ''}`}
+            >
+              {/* Team info */}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`text-[10px] md:text-xs font-bold w-4 shrink-0 ${rank <= 4 && seasonStarted ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {rank}
+                </span>
+                <span className="text-base md:text-lg shrink-0">{team.emoji}</span>
+                <div className="min-w-0">
+                  <div className={`font-rajdhani font-bold text-xs md:text-sm leading-tight truncate ${isFav ? 'text-primary' : ''}`}>
+                    {team.shortName}
+                    {isFav && <span className="ml-1 text-[9px] text-primary">♥</span>}
+                  </div>
+                  <div className="hidden sm:flex items-center gap-1 mt-0.5">
+                    {entry.form.slice(-4).map((r, i) => <FormBadge key={i} result={r} />)}
+                  </div>
+                </div>
+              </div>
+              <span className="text-center w-7 md:w-8 text-xs md:text-sm text-muted-foreground">{entry.played}</span>
+              <span className="text-center w-7 md:w-8 text-xs md:text-sm text-primary font-semibold">{entry.won}</span>
+              <span className="text-center w-7 md:w-8 text-xs md:text-sm text-destructive font-semibold">{entry.lost}</span>
+              <span className={`text-center w-10 md:w-12 text-xs md:text-sm font-mono ${entry.nrr >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                {entry.nrr >= 0 ? '+' : ''}{entry.nrr.toFixed(3)}
+              </span>
+              <span className="text-center w-8 md:w-9 font-rajdhani font-bold text-sm md:text-base text-yellow-400">{entry.pts}</span>
+            </div>
+          );
+        })}
+
+        {/* Expand / collapse */}
+        <button
+          className="w-full py-2.5 text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors border-t border-border bg-muted/20 hover:bg-muted/40"
+          onClick={() => setExpanded(e => !e)}
+        >
+          {expanded
+            ? <><ChevronUp className="w-3 h-3" /> Show Top 5</>
+            : <><ChevronDown className="w-3 h-3" /> Show All 10 Teams</>}
+        </button>
+      </div>
+
+      {/* Legend */}
+      {seasonStarted && (
+        <div className="flex items-center gap-3 mt-2 px-1">
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <span>Playoff qualification (Top 4)</span>
+          </div>
+        </div>
+      )}
+      {!seasonStarted && (
+        <p className="text-[11px] text-muted-foreground mt-2 px-1 text-center">
+          🗓️ Season starts 22 March 2026 — standings will update after each match
+        </p>
+      )}
+    </div>
+  );
 };
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -332,6 +448,9 @@ const Dashboard: React.FC = () => {
             ))}
           </ul>
         </div>
+
+        {/* ── Points Table ─────────────────────────────────────── */}
+        <PointsTable favTeamId={favTeamId} />
 
         {/* ── Two-column layout on tablet/desktop ─────────────── */}
         <div className="lg:grid lg:grid-cols-5 lg:gap-6">
