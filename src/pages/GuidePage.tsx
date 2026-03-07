@@ -95,7 +95,7 @@ const faqs = [
   },
   {
     q: 'Is this real money?',
-    a: 'No — this is a completely free-to-play platform. All coins are virtual and have no monetary value. It\'s purely for fun and bragging rights on the leaderboard!',
+    a: "No - this is a completely free-to-play platform. All coins are virtual and have no monetary value. It is purely for fun and bragging rights on the leaderboard!",
   },
 ];
 
