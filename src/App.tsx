@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import LiveMatchPage from "@/pages/LiveMatchPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import ProfilePage from "@/pages/ProfilePage";
+import GuidePage from "@/pages/GuidePage";
 
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const AppRouter = () => {
       case 'live-match': return <LiveMatchPage />;
       case 'leaderboard': return <LeaderboardPage />;
       case 'profile': return <ProfilePage />;
+      case 'guide': return <GuidePage />;
       default: return <LandingPage />;
     }
   };

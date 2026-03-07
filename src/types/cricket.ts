@@ -54,6 +54,45 @@ export interface BallEvent {
   commentary?: string;
 }
 
+// ---- New structured prediction types ----
+
+export type PredictionPhase =
+  | 'pre-match'      // 4h before match — full match predictions
+  | 'powerplay'      // After PP (overs 1–6)
+  | 'strategic-timeout' // Mid-innings strategic timeout
+  | 'innings-break'; // Between innings
+
+export type PredictionStatus = 'open' | 'locked' | 'won' | 'lost' | 'pending';
+
+export interface PredictionOption {
+  id: string;
+  label: string;
+  emoji: string;
+  odds: number; // multiplier
+}
+
+export interface PredictionQuestion {
+  id: string;
+  phase: PredictionPhase;
+  category: 'batting' | 'bowling' | 'match' | 'team';
+  question: string;
+  description: string;
+  options: PredictionOption[];
+  cost: number;
+  opensAt: string;   // ISO timestamp
+  closesAt: string;
+  status: PredictionStatus;
+  correctOptionId?: string;
+}
+
+export interface UserPrediction {
+  questionId: string;
+  optionId: string;
+  costPaid: number;
+  potentialWin: number;
+  result: PredictionStatus;
+}
+
 export interface Prediction {
   id: string;
   type: 'next-ball' | 'next-over' | 'special';
