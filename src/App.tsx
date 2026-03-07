@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import LiveMatchPage from "@/pages/LiveMatchPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import ProfilePage from "@/pages/ProfilePage";
+import GuidePage from "@/pages/GuidePage";
 
 
 const queryClient = new QueryClient();
