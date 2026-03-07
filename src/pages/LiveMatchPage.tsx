@@ -289,7 +289,6 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, di
       {/* Options */}
       <div className="grid grid-cols-1 gap-2">
         {q.options.map(opt => {
-          const isSelected = userAnswer === opt.id || pending === opt.id;
           return (
             <button
               key={opt.id}
@@ -302,7 +301,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, di
                   ? `${meta.badge} border-current`
                   : answered
                   ? 'bg-muted border-transparent text-muted-foreground opacity-50'
-                  : 'bg-background/60 border-border hover:border-current hover:' + meta.badge
+                  : 'bg-background/60 border-border hover:bg-surface-elevated'
               } disabled:cursor-not-allowed`}
             >
               <div className="flex items-center gap-2">
