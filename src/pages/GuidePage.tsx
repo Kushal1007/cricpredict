@@ -79,7 +79,7 @@ const faqs = [
   },
   {
     q: 'What happens if I run out of coins?',
-    a: 'You get 100 free coins every 24 hours as a refresh. You can never go permanently broke — there\'s always a way back!',
+    a: "You get 100 free coins every 24 hours as a refresh. You can never go permanently broke - there is always a way back!",
   },
   {
     q: 'How are predictions scored?',
