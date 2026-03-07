@@ -46,7 +46,7 @@ const phases = [
     title: 'Strategic Timeout',
     subtitle: 'Around overs 12–16',
     description:
-      'The Strategic Timeout is a natural break. 2–3 targeted questions drop, giving you a chance to predict the final assault based on who\'s batting.',
+      "The Strategic Timeout is a natural break. 2-3 targeted questions drop, giving you a chance to predict the final assault based on who is batting.",
     examples: [
       { q: 'Will the team hit 3+ sixes in the last 5?', opts: ['Yes (2.5×)', 'No (1.8×)'] },
       { q: 'Final over runs?', opts: ['Under 10 (2×)', '10–13 (2×)', '14+ (4×)'] },
