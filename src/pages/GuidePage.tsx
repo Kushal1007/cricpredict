@@ -12,7 +12,7 @@ const phases = [
     title: 'Pre-Match Predictions',
     subtitle: '4 hours before the first ball',
     description:
-      'Before the toss is even done, you get 3–4 big-picture questions about how the entire match will unfold. These carry the best odds because they're the hardest to get right.',
+      "Before the toss is even done, you get 3-4 big-picture questions about how the entire match will unfold. These carry the best odds because they are the hardest to get right.",
     examples: [
       { q: 'Who will top-score for MI?', opts: ['Rohit Sharma (2.5×)', 'Suryakumar Yadav (3×)', 'Hardik Pandya (4×)'] },
       { q: 'Total wickets in the match?', opts: ['Under 12 (2×)', '12–16 (2.5×)', 'Over 16 (3.5×)'] },
