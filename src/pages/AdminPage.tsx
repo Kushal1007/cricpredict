@@ -44,6 +44,16 @@ interface Stats {
   totalPoints: number;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  is_active: boolean;
+  created_at: string;
+  expires_at: string | null;
+}
+
 function computeLevel(points: number) {
   if (points >= 30000) return { level: 5, level_name: 'Legend' };
   if (points >= 15000) return { level: 4, level_name: 'Master' };
@@ -53,18 +63,24 @@ function computeLevel(points: number) {
 }
 
 const AdminPage: React.FC = () => {
-  const { logout } = useApp();
+  const { logout, user } = useApp();
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [predictions, setPredictions] = useState<PredictionRow[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0, totalPredictions: 0, totalCoinsInCirculation: 0, totalPoints: 0
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'predictions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'predictions' | 'broadcast'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ coins: number; points: number }>({ coins: 0, points: 0 });
   const [saving, setSaving] = useState(false);
+  // Broadcast form
+  const [bcTitle, setBcTitle] = useState('');
+  const [bcMessage, setBcMessage] = useState('');
+  const [bcType, setBcType] = useState<Announcement['type']>('info');
+  const [bcPosting, setBcPosting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
