@@ -11,12 +11,14 @@ import LiveMatchPage from "@/pages/LiveMatchPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import ProfilePage from "@/pages/ProfilePage";
 import GuidePage from "@/pages/GuidePage";
+import AdminPage from "@/pages/AdminPage";
+import AdminLoginPage from "@/pages/AdminLoginPage";
 
 
 const queryClient = new QueryClient();
 
 const AppRouter = () => {
-  const { currentPage, showCoinAnimation, coinAnimationAmount, authLoading } = useApp();
+  const { currentPage, showCoinAnimation, coinAnimationAmount, authLoading, isAdmin } = useApp();
 
   if (authLoading) {
     return (
@@ -28,6 +30,10 @@ const AppRouter = () => {
       </div>
     );
   }
+
+  // Admin pages bypass normal layout
+  if (currentPage === 'admin-login') return <AdminLoginPage />;
+  if (currentPage === 'admin' && isAdmin) return <AdminPage />;
 
   const renderPage = () => {
     switch (currentPage) {

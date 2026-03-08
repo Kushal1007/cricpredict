@@ -3,6 +3,16 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_USER } from '@/data/mockData';
 
+// ─── Admin check ─────────────────────────────────────────────────────────────
+const checkIsAdmin = async (uid: string): Promise<boolean> => {
+  const { data } = await (supabase.from('user_roles' as any) as any)
+    .select('role')
+    .eq('user_id', uid)
+    .eq('role', 'admin')
+    .maybeSingle();
+  return !!data;
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Profile {
@@ -53,6 +63,7 @@ function computeLevel(points: number): { level: number; levelName: string } {
 interface AppContextType {
   user: ReturnType<typeof profileToUser> | null;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   authLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (username: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -77,6 +88,7 @@ const AppContext = createContext<AppContextType | null>(null);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('landing');
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -103,9 +115,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (session?.user) {
           setSupabaseUser(session.user);
           await fetchProfile(session.user.id);
-          setCurrentPage('dashboard');
+          const adminStatus = await checkIsAdmin(session.user.id);
+          setIsAdmin(adminStatus);
+          setCurrentPage(adminStatus ? 'admin' : 'dashboard');
         } else {
           setSupabaseUser(null);
+          setIsAdmin(false);
           setProfile(null);
           setCurrentPage('landing');
         }
@@ -219,7 +234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      user, isLoggedIn, authLoading,
+      user, isLoggedIn, isAdmin, authLoading,
       login, signup, logout,
       updateCoins, updatePoints, updateStreak, updateFavTeam,
       currentPage, setCurrentPage,
