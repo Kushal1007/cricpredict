@@ -242,7 +242,7 @@ const PHASE_META: Record<PredictionPhase, {
 interface QuestionCardProps {
   q: PredictionQuestion;
   userAnswer: string | null;
-  onAnswer: (qId: string, optId: string, cost: number) => void;
+  onAnswer: (qId: string, optId: string, cost: number) => Promise<void>;
   disabled: boolean;
   isSubmitting?: boolean;
 }
