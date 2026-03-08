@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/context/AppContext';
 import {
   Users, Coins, Trophy, TrendingUp, Edit2, Save, X, Search,
-  ShieldCheck, LogOut, BarChart2, RefreshCw, Trash2, Crown
+  ShieldCheck, LogOut, BarChart2, RefreshCw, Crown
 } from 'lucide-react';
 
 interface ProfileRow {
@@ -43,44 +43,48 @@ interface Stats {
   totalPoints: number;
 }
 
+function computeLevel(points: number) {
+  if (points >= 30000) return { level: 5, level_name: 'Legend' };
+  if (points >= 15000) return { level: 4, level_name: 'Master' };
+  if (points >= 5000) return { level: 3, level_name: 'Expert' };
+  if (points >= 1000) return { level: 2, level_name: 'Fan' };
+  return { level: 1, level_name: 'Rookie' };
+}
+
 const AdminPage: React.FC = () => {
   const { logout } = useApp();
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [predictions, setPredictions] = useState<PredictionRow[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalPredictions: 0, totalCoinsInCirculation: 0, totalPoints: 0 });
+  const [stats, setStats] = useState<Stats>({
+    totalUsers: 0, totalPredictions: 0, totalCoinsInCirculation: 0, totalPoints: 0
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'predictions'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ coins: number; points: number }>({ coins: 0, points: 0 });
   const [saving, setSaving] = useState(false);
-  const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
 
   const fetchData = async () => {
     setLoading(true);
-
     const [profilesRes, predictionsRes, rolesRes] = await Promise.all([
       supabase.from('profiles').select('*').order('points', { ascending: false }),
       supabase.from('predictions').select('*').order('created_at', { ascending: false }).limit(200),
-      supabase.from('user_roles').select('user_id, role').eq('role', 'admin' as any),
+      supabase.from('user_roles' as any).select('user_id, role').eq('role', 'admin'),
     ]);
 
+    const adminIds = new Set<string>((rolesRes.data || []).map((r: any) => r.user_id));
+
     if (profilesRes.data) {
-      const adminIds = new Set<string>((rolesRes.data || []).map((r: any) => r.user_id));
-      setAdminUserIds(adminIds);
       const withAdmin = profilesRes.data.map((p: any) => ({ ...p, isAdmin: adminIds.has(p.id) }));
       setProfiles(withAdmin);
-
-      const totalCoins = profilesRes.data.reduce((s: number, p: any) => s + (p.coins ?? 0), 0);
-      const totalPts = profilesRes.data.reduce((s: number, p: any) => s + (p.points ?? 0), 0);
       setStats({
         totalUsers: profilesRes.data.length,
         totalPredictions: predictionsRes.data?.length ?? 0,
-        totalCoinsInCirculation: totalCoins,
-        totalPoints: totalPts,
+        totalCoinsInCirculation: profilesRes.data.reduce((s: number, p: any) => s + (p.coins ?? 0), 0),
+        totalPoints: profilesRes.data.reduce((s: number, p: any) => s + (p.points ?? 0), 0),
       });
     }
-
     if (predictionsRes.data) setPredictions(predictionsRes.data as any);
     setLoading(false);
   };
@@ -91,8 +95,6 @@ const AdminPage: React.FC = () => {
     setEditingUser(p.id);
     setEditValues({ coins: p.coins, points: p.points });
   };
-
-  const cancelEdit = () => { setEditingUser(null); };
 
   const saveEdit = async (userId: string) => {
     setSaving(true);
@@ -108,19 +110,11 @@ const AdminPage: React.FC = () => {
 
   const toggleAdmin = async (userId: string, isAdmin: boolean) => {
     if (isAdmin) {
-      await supabase.from('user_roles').delete().eq('user_id', userId).eq('role', 'admin' as any);
+      await (supabase.from('user_roles' as any) as any).delete().eq('user_id', userId).eq('role', 'admin');
     } else {
-      await supabase.from('user_roles').insert({ user_id: userId, role: 'admin' as any });
+      await (supabase.from('user_roles' as any) as any).insert({ user_id: userId, role: 'admin' });
     }
     await fetchData();
-  };
-
-  const computeLevel = (points: number) => {
-    if (points >= 30000) return { level: 5, level_name: 'Legend' };
-    if (points >= 15000) return { level: 4, level_name: 'Master' };
-    if (points >= 5000) return { level: 3, level_name: 'Expert' };
-    if (points >= 1000) return { level: 2, level_name: 'Fan' };
-    return { level: 1, level_name: 'Rookie' };
   };
 
   const filteredProfiles = profiles.filter(p =>
@@ -128,7 +122,7 @@ const AdminPage: React.FC = () => {
     p.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const resultColor = (r: string) => {
+  const resultColorClass = (r: string) => {
     if (r === 'won') return 'text-primary';
     if (r === 'lost') return 'text-destructive';
     return 'text-muted-foreground';
@@ -185,19 +179,19 @@ const AdminPage: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Overview Tab */}
+            {/* ── Overview ───────────────────────────────────────────────── */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-400' },
-                    { label: 'Total Predictions', value: stats.totalPredictions, icon: BarChart2, color: 'text-primary' },
-                    { label: 'Coins in Circulation', value: stats.totalCoinsInCirculation.toLocaleString(), icon: Coins, color: 'text-yellow-400' },
-                    { label: 'Total Points Awarded', value: stats.totalPoints.toLocaleString(), icon: Trophy, color: 'text-orange-400' },
+                    { label: 'Total Users', value: stats.totalUsers, Icon: Users, cls: 'text-blue-400' },
+                    { label: 'Total Predictions', value: stats.totalPredictions, Icon: BarChart2, cls: 'text-primary' },
+                    { label: 'Coins in Circulation', value: stats.totalCoinsInCirculation.toLocaleString(), Icon: Coins, cls: 'text-yellow-400' },
+                    { label: 'Total Points Awarded', value: stats.totalPoints.toLocaleString(), Icon: Trophy, cls: 'text-orange-400' },
                   ].map(s => (
                     <div key={s.label} className="bg-surface border border-border rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <s.icon className={`w-4 h-4 ${s.color}`} />
+                        <s.Icon className={`w-4 h-4 ${s.cls}`} />
                         <span className="text-xs text-muted-foreground">{s.label}</span>
                       </div>
                       <div className="text-2xl font-bold font-rajdhani">{s.value}</div>
@@ -205,7 +199,6 @@ const AdminPage: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Top 5 users */}
                 <div className="bg-surface border border-border rounded-xl p-5">
                   <h3 className="font-semibold mb-4 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-primary" /> Top 5 Users by Points
@@ -230,12 +223,15 @@ const AdminPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                    {profiles.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">No users yet.</p>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Users Tab */}
+            {/* ── Users ──────────────────────────────────────────────────── */}
             {activeTab === 'users' && (
               <div className="space-y-4">
                 <div className="relative">
@@ -245,22 +241,18 @@ const AdminPage: React.FC = () => {
                     placeholder="Search by username or email…"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
                   />
                 </div>
-
                 <div className="text-xs text-muted-foreground">{filteredProfiles.length} user(s)</div>
 
                 <div className="space-y-3">
                   {filteredProfiles.map(p => (
                     <div key={p.id} className="bg-surface border border-border rounded-xl p-4">
                       <div className="flex items-start gap-3">
-                        {/* Avatar */}
                         <div className="w-9 h-9 rounded-full gradient-green flex items-center justify-center text-background font-bold text-sm shrink-0">
                           {p.username[0].toUpperCase()}
                         </div>
-
-                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-sm">{p.username}</span>
@@ -273,14 +265,19 @@ const AdminPage: React.FC = () => {
                           </div>
                           <div className="text-xs text-muted-foreground truncate">{p.email}</div>
 
-                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3">
                             {[
                               { label: 'Coins', val: p.coins.toLocaleString() },
                               { label: 'Points', val: p.points.toLocaleString() },
                               { label: 'Streak', val: p.streak },
                               { label: 'Predictions', val: p.total_predictions },
                               { label: 'Correct', val: p.correct_predictions },
-                              { label: 'Accuracy', val: p.total_predictions > 0 ? `${Math.round((p.correct_predictions / p.total_predictions) * 100)}%` : '—' },
+                              {
+                                label: 'Accuracy',
+                                val: p.total_predictions > 0
+                                  ? `${Math.round((p.correct_predictions / p.total_predictions) * 100)}%`
+                                  : '—'
+                              },
                             ].map(s => (
                               <div key={s.label} className="bg-background rounded-lg p-2 text-center">
                                 <div className="text-xs text-muted-foreground">{s.label}</div>
@@ -289,7 +286,6 @@ const AdminPage: React.FC = () => {
                             ))}
                           </div>
 
-                          {/* Edit row */}
                           {editingUser === p.id ? (
                             <div className="mt-3 flex items-center gap-2 flex-wrap">
                               <div className="flex items-center gap-1.5 bg-background rounded-lg px-3 py-1.5 border border-border">
@@ -298,7 +294,7 @@ const AdminPage: React.FC = () => {
                                   type="number"
                                   value={editValues.coins}
                                   onChange={e => setEditValues(v => ({ ...v, coins: Number(e.target.value) }))}
-                                  className="w-20 bg-transparent text-sm focus:outline-none"
+                                  className="w-20 bg-transparent text-sm focus:outline-none text-foreground"
                                 />
                               </div>
                               <div className="flex items-center gap-1.5 bg-background rounded-lg px-3 py-1.5 border border-border">
@@ -307,18 +303,18 @@ const AdminPage: React.FC = () => {
                                   type="number"
                                   value={editValues.points}
                                   onChange={e => setEditValues(v => ({ ...v, points: Number(e.target.value) }))}
-                                  className="w-20 bg-transparent text-sm focus:outline-none"
+                                  className="w-20 bg-transparent text-sm focus:outline-none text-foreground"
                                 />
                               </div>
                               <button
                                 onClick={() => saveEdit(p.id)}
                                 disabled={saving}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors"
+                                className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
                               >
                                 <Save className="w-3 h-3" /> Save
                               </button>
                               <button
-                                onClick={cancelEdit}
+                                onClick={() => setEditingUser(null)}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors"
                               >
                                 <X className="w-3 h-3" /> Cancel
@@ -349,36 +345,43 @@ const AdminPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                  {filteredProfiles.length === 0 && (
+                    <p className="text-center text-muted-foreground py-10">No users found.</p>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Predictions Tab */}
+            {/* ── Predictions ────────────────────────────────────────────── */}
             {activeTab === 'predictions' && (
               <div className="space-y-3">
                 <div className="text-xs text-muted-foreground">Showing latest 200 predictions across all users</div>
                 {predictions.map(pred => {
-                  const user = profiles.find(p => p.id === pred.user_id);
+                  const u = profiles.find(p => p.id === pred.user_id);
                   return (
                     <div key={pred.id} className="bg-surface border border-border rounded-xl p-4 flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full gradient-green flex items-center justify-center text-background font-bold text-xs shrink-0">
-                        {user ? user.username[0].toUpperCase() : '?'}
+                        {u ? u.username[0].toUpperCase() : '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium">{user?.username ?? pred.user_id.slice(0, 8)}</span>
-                          <span className={`text-xs font-semibold capitalize ${resultColor(pred.result)}`}>{pred.result}</span>
+                          <span className="text-sm font-medium">{u?.username ?? pred.user_id.slice(0, 8)}</span>
+                          <span className={`text-xs font-semibold capitalize ${resultColorClass(pred.result)}`}>
+                            {pred.result}
+                          </span>
                           <span className="text-xs text-muted-foreground capitalize">{pred.phase}</span>
                         </div>
                         <div className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{pred.question_text}</div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                           <span>Picked: <span className="text-foreground">{pred.option_label}</span></span>
                           <span>Cost: <span className="text-yellow-400">{pred.cost_paid}🪙</span></span>
-                          <span>Potential: <span className="text-primary">+{pred.potential_win}🪙</span></span>
+                          <span>Win: <span className="text-primary">+{pred.potential_win}🪙</span></span>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground shrink-0">
-                        {new Date(pred.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      <div className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
+                        {new Date(pred.created_at).toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                        })}
                       </div>
                     </div>
                   );
