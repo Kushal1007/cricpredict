@@ -257,14 +257,12 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, di
     setPending(opt.id);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!pending) return;
     setConfirming(true);
-    setTimeout(() => {
-      onAnswer(q.id, pending, q.cost);
-      setPending(null);
-      setConfirming(false);
-    }, 800);
+    await onAnswer(q.id, pending, q.cost);
+    setPending(null);
+    setConfirming(false);
   };
 
   const answered = !!userAnswer;
