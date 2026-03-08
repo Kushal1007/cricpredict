@@ -99,11 +99,24 @@ const AdminPage: React.FC = () => {
   const saveEdit = async (userId: string) => {
     setSaving(true);
     const { level, level_name } = computeLevel(editValues.points);
-    await supabase
+    const { data } = await supabase
       .from('profiles')
       .update({ coins: editValues.coins, points: editValues.points, level, level_name })
-      .eq('id', userId);
-    await fetchData();
+      .eq('id', userId)
+      .select()
+      .single();
+    if (data) {
+      // Patch local state directly — no need to re-fetch all 3 queries
+      setProfiles(prev =>
+        prev.map(p => p.id === userId ? { ...p, ...(data as any) } : p)
+      );
+      // Recompute stats
+      setStats(prev => ({
+        ...prev,
+        totalCoinsInCirculation: prev.totalCoinsInCirculation - (profiles.find(p => p.id === userId)?.coins ?? 0) + editValues.coins,
+        totalPoints: prev.totalPoints - (profiles.find(p => p.id === userId)?.points ?? 0) + editValues.points,
+      }));
+    }
     setEditingUser(null);
     setSaving(false);
   };
