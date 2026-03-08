@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Coins, Menu, X } from 'lucide-react';
+import { Coins, Menu, X, ShieldCheck } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const { user, isLoggedIn, logout, setCurrentPage, currentPage } = useApp();
+  const { user, isLoggedIn, isAdmin, logout, setCurrentPage, currentPage } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = isLoggedIn
