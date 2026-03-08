@@ -99,13 +99,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const user = profile ? profileToUser(profile) : null;
 
   // ── Fetch profile ─────────────────────────────────────────────────────────
-  const fetchProfile = async (uid: string) => {
+  const fetchProfile = async (uid: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', uid)
       .single();
-    if (!error && data) setProfile(data as Profile);
+    if (!error && data) {
+      setProfile(data as Profile);
+      return data as Profile;
+    }
+    return null;
   };
 
   // ── Auth state listener ───────────────────────────────────────────────────
@@ -114,8 +118,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       async (event, session: Session | null) => {
         if (session?.user) {
           setSupabaseUser(session.user);
-          await fetchProfile(session.user.id);
-          const adminStatus = await checkIsAdmin(session.user.id);
+          // Fetch profile and admin status in parallel — cuts login wait in half
+          const [, adminStatus] = await Promise.all([
+            fetchProfile(session.user.id),
+            checkIsAdmin(session.user.id),
+          ]);
           setIsAdmin(adminStatus);
           setCurrentPage(adminStatus ? 'admin' : 'dashboard');
         } else {
