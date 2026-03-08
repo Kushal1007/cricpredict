@@ -543,12 +543,34 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'fav'>('all');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [scheduleFilter, setScheduleFilter] = useState<'all' | 'group' | 'playoffs'>('all');
+  const [announcements, setAnnouncements] = useState<{ id: string; title: string; message: string; type: string }[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('dismissedAnnouncements') || '[]')); }
+    catch { return new Set(); }
+  });
 
   // Sync fav from user profile whenever it updates
   useEffect(() => {
     const fromProfile = (user as any)?.fav_team_id;
     if (fromProfile !== undefined) setFavTeamId(fromProfile);
   }, [(user as any)?.fav_team_id]);
+
+  // Fetch active announcements
+  useEffect(() => {
+    (supabase.from('announcements' as any) as any)
+      .select('id, title, message, type')
+      .eq('is_active', true)
+      .then(({ data }: any) => { if (data) setAnnouncements(data); });
+  }, []);
+
+  const dismissAnnouncement = (id: string) => {
+    const next = new Set(dismissedIds);
+    next.add(id);
+    setDismissedIds(next);
+    localStorage.setItem('dismissedAnnouncements', JSON.stringify([...next]));
+  };
+
+  const visibleAnnouncements = announcements.filter(a => !dismissedIds.has(a.id));
 
   const accuracy = user ? Math.round((user.correctPredictions / Math.max(user.totalPredictions, 1)) * 100) : 0;
   const levelProgress = user ? ((user.points % 3000) / 3000) * 100 : 0;
