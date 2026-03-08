@@ -13,6 +13,7 @@ const Navbar: React.FC = () => {
         { label: 'Leaderboard', page: 'leaderboard' },
         { label: 'Profile', page: 'profile' },
         { label: 'How to Play', page: 'guide' },
+        ...(isAdmin ? [{ label: 'Admin', page: 'admin' }] : []),
       ]
     : [
         { label: 'Features', page: 'landing' },
