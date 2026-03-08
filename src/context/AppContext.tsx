@@ -234,7 +234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      user, isLoggedIn, authLoading,
+      user, isLoggedIn, isAdmin, authLoading,
       login, signup, logout,
       updateCoins, updatePoints, updateStreak, updateFavTeam,
       currentPage, setCurrentPage,
