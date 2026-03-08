@@ -84,10 +84,11 @@ const AdminPage: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [profilesRes, predictionsRes, rolesRes] = await Promise.all([
+    const [profilesRes, predictionsRes, rolesRes, announcementsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('points', { ascending: false }),
       supabase.from('predictions').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('user_roles' as any).select('user_id, role').eq('role', 'admin'),
+      (supabase.from('announcements' as any) as any).select('*').order('created_at', { ascending: false }),
     ]);
 
     const adminIds = new Set<string>((rolesRes.data || []).map((r: any) => r.user_id));
@@ -103,7 +104,37 @@ const AdminPage: React.FC = () => {
       });
     }
     if (predictionsRes.data) setPredictions(predictionsRes.data as any);
+    if (announcementsRes.data) setAnnouncements(announcementsRes.data as Announcement[]);
     setLoading(false);
+  };
+
+  const postAnnouncement = async () => {
+    if (!bcTitle.trim() || !bcMessage.trim() || !user) return;
+    setBcPosting(true);
+    const { data } = await (supabase.from('announcements' as any) as any).insert({
+      title: bcTitle.trim(),
+      message: bcMessage.trim(),
+      type: bcType,
+      is_active: true,
+      created_by: user.id,
+    }).select().single();
+    if (data) setAnnouncements(prev => [data as Announcement, ...prev]);
+    setBcTitle('');
+    setBcMessage('');
+    setBcType('info');
+    setBcPosting(false);
+  };
+
+  const toggleAnnouncement = async (id: string, current: boolean) => {
+    await (supabase.from('announcements' as any) as any)
+      .update({ is_active: !current })
+      .eq('id', id);
+    setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, is_active: !current } : a));
+  };
+
+  const deleteAnnouncement = async (id: string) => {
+    await (supabase.from('announcements' as any) as any).delete().eq('id', id);
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
   };
 
   useEffect(() => { fetchData(); }, []);
