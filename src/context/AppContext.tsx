@@ -3,6 +3,16 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_USER } from '@/data/mockData';
 
+// ─── Admin check ─────────────────────────────────────────────────────────────
+const checkIsAdmin = async (uid: string): Promise<boolean> => {
+  const { data } = await (supabase.from('user_roles' as any) as any)
+    .select('role')
+    .eq('user_id', uid)
+    .eq('role', 'admin')
+    .maybeSingle();
+  return !!data;
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Profile {
