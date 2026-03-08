@@ -332,10 +332,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, di
             </button>
             <button
               onClick={handleConfirm}
-              disabled={confirming}
+              disabled={confirming || isSubmitting}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border ${meta.badge} border-current hover:opacity-80 disabled:opacity-50`}
             >
-              {confirming ? '⏳ Processing…' : '✓ Confirm'}
+              {confirming || isSubmitting ? '⏳ Saving…' : '✓ Confirm'}
             </button>
           </div>
         </div>
