@@ -596,6 +596,7 @@ const LiveMatchPage: React.FC = () => {
               userAnswer={answers[q.id] ?? null}
               onAnswer={handleAnswer}
               disabled={!user || user.coins < q.cost}
+              isSubmitting={submitting === q.id}
             />
           ))}
         </div>
