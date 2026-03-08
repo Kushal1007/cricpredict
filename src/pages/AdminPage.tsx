@@ -462,6 +462,133 @@ const AdminPage: React.FC = () => {
                 )}
               </div>
             )}
+
+            {/* ── Broadcast ──────────────────────────────────────────── */}
+            {activeTab === 'broadcast' && (
+              <div className="space-y-6">
+
+                {/* Compose */}
+                <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-primary" /> New Announcement
+                  </h3>
+
+                  {/* Type selector */}
+                  <div className="flex gap-2 flex-wrap">
+                    {([
+                      { key: 'info',    label: '💡 Info',    cls: 'border-blue-400/40 text-blue-400 bg-blue-400/10' },
+                      { key: 'success', label: '✅ Success', cls: 'border-primary/40 text-primary bg-primary/10' },
+                      { key: 'warning', label: '⚠️ Warning', cls: 'border-yellow-400/40 text-yellow-400 bg-yellow-400/10' },
+                      { key: 'error',   label: '🚨 Alert',   cls: 'border-destructive/40 text-destructive bg-destructive/10' },
+                    ] as const).map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => setBcType(t.key)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                          bcType === t.key ? t.cls : 'border-border text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Announcement title…"
+                    value={bcTitle}
+                    onChange={e => setBcTitle(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground"
+                  />
+                  <textarea
+                    rows={3}
+                    placeholder="Write your message to all users…"
+                    value={bcMessage}
+                    onChange={e => setBcMessage(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground resize-none"
+                  />
+
+                  {/* Preview */}
+                  {(bcTitle || bcMessage) && (
+                    <div className={`rounded-xl p-4 border flex items-start gap-3 ${
+                      bcType === 'success' ? 'bg-primary/5 border-primary/25' :
+                      bcType === 'warning' ? 'bg-yellow-400/5 border-yellow-400/25' :
+                      bcType === 'error'   ? 'bg-destructive/5 border-destructive/25' :
+                                            'bg-blue-400/5 border-blue-400/25'
+                    }`}>
+                      <span className="text-lg mt-0.5">
+                        {bcType === 'success' ? '✅' : bcType === 'warning' ? '⚠️' : bcType === 'error' ? '🚨' : '💡'}
+                      </span>
+                      <div>
+                        <div className="font-semibold text-sm">{bcTitle || 'Title preview'}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{bcMessage || 'Message preview'}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={postAnnouncement}
+                    disabled={!bcTitle.trim() || !bcMessage.trim() || bcPosting}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {bcPosting ? 'Posting…' : 'Post Announcement'}
+                  </button>
+                </div>
+
+                {/* Existing announcements */}
+                <div>
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-3">
+                    All Announcements ({announcements.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {announcements.map(a => (
+                      <div key={a.id} className={`bg-surface border rounded-xl p-4 flex items-start gap-3 transition-all ${
+                        a.is_active ? 'border-border' : 'border-border/40 opacity-60'
+                      }`}>
+                        <span className="text-xl shrink-0 mt-0.5">
+                          {a.type === 'success' ? '✅' : a.type === 'warning' ? '⚠️' : a.type === 'error' ? '🚨' : '💡'}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm">{a.title}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${
+                              a.is_active
+                                ? 'text-primary bg-primary/10 border-primary/30'
+                                : 'text-muted-foreground bg-muted/30 border-border'
+                            }`}>
+                              {a.is_active ? 'LIVE' : 'HIDDEN'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.message}</p>
+                          <div className="text-[10px] text-muted-foreground/60 mt-1">
+                            {new Date(a.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => toggleAnnouncement(a.id, a.is_active)}
+                            className="p-1.5 rounded-lg hover:bg-background transition-colors text-muted-foreground hover:text-foreground"
+                            title={a.is_active ? 'Deactivate' : 'Activate'}
+                          >
+                            {a.is_active ? <ToggleRight className="w-4 h-4 text-primary" /> : <ToggleLeft className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => deleteAnnouncement(a.id)}
+                            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {announcements.length === 0 && (
+                      <div className="text-center py-10 text-muted-foreground text-sm">No announcements yet. Create one above!</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
