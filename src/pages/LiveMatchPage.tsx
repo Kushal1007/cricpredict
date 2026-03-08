@@ -3,6 +3,8 @@ import { useApp } from '@/context/AppContext';
 import { MOCK_MATCHES } from '@/data/mockData';
 import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info } from 'lucide-react';
 import { PredictionPhase, PredictionQuestion, PredictionOption } from '@/types/cricket';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // ─── Static prediction data for a MI vs CSK match ───────────────────────────
 
@@ -240,11 +242,12 @@ const PHASE_META: Record<PredictionPhase, {
 interface QuestionCardProps {
   q: PredictionQuestion;
   userAnswer: string | null;
-  onAnswer: (qId: string, optId: string, cost: number) => void;
+  onAnswer: (qId: string, optId: string, cost: number) => Promise<void>;
   disabled: boolean;
+  isSubmitting?: boolean;
 }
 
-const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, disabled }) => {
+const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, disabled, isSubmitting }) => {
   const [pending, setPending] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const meta = PHASE_META[q.phase];
@@ -254,14 +257,12 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, di
     setPending(opt.id);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!pending) return;
     setConfirming(true);
-    setTimeout(() => {
-      onAnswer(q.id, pending, q.cost);
-      setPending(null);
-      setConfirming(false);
-    }, 800);
+    await onAnswer(q.id, pending, q.cost);
+    setPending(null);
+    setConfirming(false);
   };
 
   const answered = !!userAnswer;
@@ -331,10 +332,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, di
             </button>
             <button
               onClick={handleConfirm}
-              disabled={confirming}
+              disabled={confirming || isSubmitting}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border ${meta.badge} border-current hover:opacity-80 disabled:opacity-50`}
             >
-              {confirming ? '⏳ Processing…' : '✓ Confirm'}
+              {confirming || isSubmitting ? '⏳ Saving…' : '✓ Confirm'}
             </button>
           </div>
         </div>
@@ -360,34 +361,83 @@ const PHASES: { key: PredictionPhase; questions: PredictionQuestion[] }[] = [
 
 const LiveMatchPage: React.FC = () => {
   const { selectedMatchId, setCurrentPage, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
+  const { toast } = useToast();
   const match = MOCK_MATCHES.find(m => m.id === selectedMatchId) || MOCK_MATCHES[0];
 
   const [activePhase, setActivePhase] = useState<PredictionPhase>('pre-match');
   // Map questionId → chosen optionId
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [streak, setStreak] = useState(user?.streak || 0);
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
-  const handleAnswer = (qId: string, optId: string, cost: number) => {
-    if (!user || user.coins < cost) return;
-    updateCoins(-cost);
+  const handleAnswer = async (qId: string, optId: string, cost: number) => {
+    if (!user || user.coins < cost) {
+      toast({ title: "Not enough coins", description: "You don't have enough coins for this prediction.", variant: "destructive" });
+      return;
+    }
+
+    setSubmitting(qId);
+
+    const question = PHASES.flatMap(p => p.questions).find(q => q.id === qId);
+    const opt = question?.options.find(o => o.id === optId);
+    if (!question || !opt) { setSubmitting(null); return; }
+
+    const potentialWin = Math.floor(cost * opt.odds);
+
+    // 1. Deduct coins immediately
+    await updateCoins(-cost);
     setAnswers(prev => ({ ...prev, [qId]: optId }));
+    setSubmitting(null);
 
-    // Simulate result after a delay
-    setTimeout(() => {
+    // 2. Save prediction to DB
+    const { error: insertError } = await supabase.from('predictions').insert({
+      user_id: user.id,
+      match_id: match.id,
+      question_id: qId,
+      question_text: question.question,
+      phase: question.phase,
+      option_id: optId,
+      option_label: opt.label,
+      cost_paid: cost,
+      potential_win: potentialWin,
+      result: 'pending',
+    });
+
+    if (insertError) {
+      console.error('Failed to save prediction:', insertError);
+      toast({ title: "Prediction saved locally", description: "Could not sync to server — will retry.", variant: "destructive" });
+    } else {
+      toast({ title: "Prediction locked! 🎯", description: `${opt.emoji} ${opt.label} · Potential win: ${potentialWin} coins` });
+    }
+
+    // 3. Simulate result after a delay (virtual time resolution)
+    setTimeout(async () => {
       const won = Math.random() > 0.4;
-      const question = PHASES.flatMap(p => p.questions).find(q => q.id === qId);
-      const opt = question?.options.find(o => o.id === optId);
-      const earned = won && opt ? Math.floor(cost * opt.odds) : 0;
+      const earned = won ? potentialWin : 0;
+
+      // Update prediction result in DB
+      await supabase
+        .from('predictions')
+        .update({
+          result: won ? 'won' : 'lost',
+          coins_won: won ? earned : 0,
+          resolved_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('question_id', qId)
+        .eq('match_id', match.id);
 
       if (won && earned > 0) {
-        updateCoins(earned);
-        updatePoints(earned);
+        await updateCoins(earned);
+        await updatePoints(earned);
         triggerCoinAnimation(earned - cost);
         setStreak(s => s + 1);
-        updateStreak(true);
+        await updateStreak(true);
+        toast({ title: `✅ Prediction won! +${earned} coins`, description: `${opt.emoji} ${opt.label} was correct!` });
       } else {
         setStreak(0);
-        updateStreak(false);
+        await updateStreak(false);
+        toast({ title: "❌ Prediction lost", description: `Better luck next time!`, variant: "destructive" });
       }
     }, 3000 + Math.random() * 2000);
   };
@@ -546,6 +596,7 @@ const LiveMatchPage: React.FC = () => {
               userAnswer={answers[q.id] ?? null}
               onAnswer={handleAnswer}
               disabled={!user || user.coins < q.cost}
+              isSubmitting={submitting === q.id}
             />
           ))}
         </div>
