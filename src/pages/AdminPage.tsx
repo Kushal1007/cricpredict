@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/context/AppContext';
 import {
   Users, Coins, Trophy, TrendingUp, Edit2, Save, X, Search,
-  ShieldCheck, LogOut, BarChart2, RefreshCw, Crown
+  ShieldCheck, LogOut, BarChart2, RefreshCw, Crown, Megaphone,
+  CheckCircle, AlertCircle, Info, Trash2, Plus, ToggleLeft, ToggleRight
 } from 'lucide-react';
 
 interface ProfileRow {
