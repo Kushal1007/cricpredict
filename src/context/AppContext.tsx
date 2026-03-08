@@ -115,9 +115,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (session?.user) {
           setSupabaseUser(session.user);
           await fetchProfile(session.user.id);
-          setCurrentPage('dashboard');
+          const adminStatus = await checkIsAdmin(session.user.id);
+          setIsAdmin(adminStatus);
+          setCurrentPage(adminStatus ? 'admin' : 'dashboard');
         } else {
           setSupabaseUser(null);
+          setIsAdmin(false);
           setProfile(null);
           setCurrentPage('landing');
         }
