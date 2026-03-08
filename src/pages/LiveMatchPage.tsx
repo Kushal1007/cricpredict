@@ -244,9 +244,10 @@ interface QuestionCardProps {
   userAnswer: string | null;
   onAnswer: (qId: string, optId: string, cost: number) => void;
   disabled: boolean;
+  isSubmitting?: boolean;
 }
 
-const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, disabled }) => {
+const QuestionCard: React.FC<QuestionCardProps> = ({ q, userAnswer, onAnswer, disabled, isSubmitting }) => {
   const [pending, setPending] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const meta = PHASE_META[q.phase];
