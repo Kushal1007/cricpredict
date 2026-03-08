@@ -218,18 +218,28 @@ const AdminPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-border/50">
-          {(['overview', 'users', 'predictions'] as const).map(tab => (
+        <div className="flex gap-2 mb-6 border-b border-border/50 overflow-x-auto">
+          {([
+            { key: 'overview', label: 'Overview' },
+            { key: 'users', label: 'Users' },
+            { key: 'predictions', label: 'Predictions' },
+            { key: 'broadcast', label: 'Broadcast', badge: announcements.filter(a => a.is_active).length },
+          ] as const).map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-                activeTab === tab
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                activeTab === tab.key
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              {tab}
+              {tab.label}
+              {'badge' in tab && tab.badge > 0 && (
+                <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
