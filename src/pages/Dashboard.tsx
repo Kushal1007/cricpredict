@@ -3,8 +3,9 @@ import { useApp } from '@/context/AppContext';
 import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPLTeam } from '@/data/iplData';
 import {
   Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp,
-  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight
+  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
