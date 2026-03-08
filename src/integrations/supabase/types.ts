@@ -14,13 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      predictions: {
+        Row: {
+          coins_won: number | null
+          cost_paid: number
+          created_at: string
+          id: string
+          match_id: string
+          option_id: string
+          option_label: string
+          phase: string
+          potential_win: number
+          question_id: string
+          question_text: string
+          resolved_at: string | null
+          result: string
+          user_id: string
+        }
+        Insert: {
+          coins_won?: number | null
+          cost_paid: number
+          created_at?: string
+          id?: string
+          match_id: string
+          option_id: string
+          option_label: string
+          phase: string
+          potential_win: number
+          question_id: string
+          question_text: string
+          resolved_at?: string | null
+          result?: string
+          user_id: string
+        }
+        Update: {
+          coins_won?: number | null
+          cost_paid?: number
+          created_at?: string
+          id?: string
+          match_id?: string
+          option_id?: string
+          option_label?: string
+          phase?: string
+          potential_win?: number
+          question_id?: string
+          question_text?: string
+          resolved_at?: string | null
+          result?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          best_streak: number
+          coins: number
+          correct_predictions: number
+          created_at: string
+          email: string
+          fav_team_id: string | null
+          id: string
+          level: number
+          level_name: string
+          login_streak: number
+          matches_played: number
+          points: number
+          streak: number
+          total_predictions: number
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          best_streak?: number
+          coins?: number
+          correct_predictions?: number
+          created_at?: string
+          email: string
+          fav_team_id?: string | null
+          id: string
+          level?: number
+          level_name?: string
+          login_streak?: number
+          matches_played?: number
+          points?: number
+          streak?: number
+          total_predictions?: number
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          best_streak?: number
+          coins?: number
+          correct_predictions?: number
+          created_at?: string
+          email?: string
+          fav_team_id?: string | null
+          id?: string
+          level?: number
+          level_name?: string
+          login_streak?: number
+          matches_played?: number
+          points?: number
+          streak?: number
+          total_predictions?: number
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      leaderboard: {
+        Row: {
+          accuracy: number | null
+          best_streak: number | null
+          coins: number | null
+          id: string | null
+          level_name: string | null
+          points: number | null
+          rank: number | null
+          streak: number | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      compute_level: {
+        Args: { p_points: number }
+        Returns: Record<string, unknown>
+      }
     }
     Enums: {
       [_ in never]: never
