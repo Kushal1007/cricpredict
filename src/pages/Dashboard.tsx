@@ -3,8 +3,9 @@ import { useApp } from '@/context/AppContext';
 import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPLTeam } from '@/data/iplData';
 import {
   Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp,
-  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight
+  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -542,12 +543,34 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'fav'>('all');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [scheduleFilter, setScheduleFilter] = useState<'all' | 'group' | 'playoffs'>('all');
+  const [announcements, setAnnouncements] = useState<{ id: string; title: string; message: string; type: string }[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('dismissedAnnouncements') || '[]')); }
+    catch { return new Set(); }
+  });
 
   // Sync fav from user profile whenever it updates
   useEffect(() => {
     const fromProfile = (user as any)?.fav_team_id;
     if (fromProfile !== undefined) setFavTeamId(fromProfile);
   }, [(user as any)?.fav_team_id]);
+
+  // Fetch active announcements
+  useEffect(() => {
+    (supabase.from('announcements' as any) as any)
+      .select('id, title, message, type')
+      .eq('is_active', true)
+      .then(({ data }: any) => { if (data) setAnnouncements(data); });
+  }, []);
+
+  const dismissAnnouncement = (id: string) => {
+    const next = new Set(dismissedIds);
+    next.add(id);
+    setDismissedIds(next);
+    localStorage.setItem('dismissedAnnouncements', JSON.stringify([...next]));
+  };
+
+  const visibleAnnouncements = announcements.filter(a => !dismissedIds.has(a.id));
 
   const accuracy = user ? Math.round((user.correctPredictions / Math.max(user.totalPredictions, 1)) * 100) : 0;
   const levelProgress = user ? ((user.points % 3000) / 3000) * 100 : 0;
@@ -591,6 +614,35 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-6 max-w-5xl">
+
+        {/* ── Announcement Banners ──────────────────────────────── */}
+        {visibleAnnouncements.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {visibleAnnouncements.map(a => (
+              <div
+                key={a.id}
+                className={`flex items-start gap-3 rounded-xl px-4 py-3 border text-sm ${
+                  a.type === 'success' ? 'bg-primary/10 border-primary/30 text-primary' :
+                  a.type === 'warning' ? 'bg-yellow-400/10 border-yellow-400/30 text-yellow-400' :
+                  a.type === 'error'   ? 'bg-destructive/10 border-destructive/30 text-destructive' :
+                                        'bg-blue-400/10 border-blue-400/30 text-blue-400'
+                }`}
+              >
+                <Megaphone className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-bold">{a.title}</span>
+                  <span className="text-current/80 ml-1.5 font-normal">{a.message}</span>
+                </div>
+                <button
+                  onClick={() => dismissAnnouncement(a.id)}
+                  className="shrink-0 p-1 rounded-lg opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── IPL Hero Banner ──────────────────────────────────── */}
         <div className="relative overflow-hidden rounded-3xl p-5 md:p-7 mb-6 border border-primary/20">
