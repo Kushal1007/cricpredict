@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPLTeam } from '@/data/iplData';
 import {
@@ -532,22 +532,32 @@ const MatchCard: React.FC<{
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
-  const { user, setCurrentPage, setSelectedMatchId } = useApp();
+  const { user, setCurrentPage, setSelectedMatchId, updateFavTeam } = useApp();
 
-  const [favTeamId, setFavTeamId] = useState<string | null>(() => localStorage.getItem('favTeamId'));
+  // Derive fav from user profile (Supabase) or localStorage fallback
+  const [favTeamId, setFavTeamId] = useState<string | null>(
+    () => (user as any)?.fav_team_id ?? localStorage.getItem('favTeamId')
+  );
   const [showFavPicker, setShowFavPicker] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'fav'>('all');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [scheduleFilter, setScheduleFilter] = useState<'all' | 'group' | 'playoffs'>('all');
 
+  // Sync fav from user profile whenever it updates
+  useEffect(() => {
+    const fromProfile = (user as any)?.fav_team_id;
+    if (fromProfile !== undefined) setFavTeamId(fromProfile);
+  }, [(user as any)?.fav_team_id]);
+
   const accuracy = user ? Math.round((user.correctPredictions / Math.max(user.totalPredictions, 1)) * 100) : 0;
   const levelProgress = user ? ((user.points % 3000) / 3000) * 100 : 0;
   const favTeam = favTeamId ? IPL_TEAMS.find(t => t.id === favTeamId) : null;
 
-  const handleSetFav = (id: string | null) => {
+  const handleSetFav = async (id: string | null) => {
     setFavTeamId(id);
-    if (id) { localStorage.setItem('favTeamId', id); setActiveTab('fav'); }
-    else { localStorage.removeItem('favTeamId'); setActiveTab('all'); }
+    if (id) setActiveTab('fav');
+    else setActiveTab('all');
+    await updateFavTeam(id);
   };
 
   const toggleFav = (id: string) => {

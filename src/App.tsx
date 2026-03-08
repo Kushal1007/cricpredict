@@ -16,7 +16,18 @@ import GuidePage from "@/pages/GuidePage";
 const queryClient = new QueryClient();
 
 const AppRouter = () => {
-  const { currentPage, showCoinAnimation, coinAnimationAmount } = useApp();
+  const { currentPage, showCoinAnimation, coinAnimationAmount, authLoading } = useApp();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-5xl animate-bounce">🏏</div>
+          <div className="font-rajdhani text-xl font-bold neon-text-green">Loading CricPredict…</div>
+        </div>
+      </div>
+    );
+  }
 
   const renderPage = () => {
     switch (currentPage) {
@@ -37,7 +48,6 @@ const AppRouter = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       {renderPage()}
-      {/* Coin animation overlay */}
       {showCoinAnimation && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none animate-fade-in-up">
           <div className="flex flex-col items-center gap-2">
