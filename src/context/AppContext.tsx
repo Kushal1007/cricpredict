@@ -63,6 +63,7 @@ function computeLevel(points: number): { level: number; levelName: string } {
 interface AppContextType {
   user: ReturnType<typeof profileToUser> | null;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   authLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (username: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
@@ -87,6 +88,7 @@ const AppContext = createContext<AppContextType | null>(null);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('landing');
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
