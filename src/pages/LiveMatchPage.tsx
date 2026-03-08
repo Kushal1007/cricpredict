@@ -3,6 +3,8 @@ import { useApp } from '@/context/AppContext';
 import { MOCK_MATCHES } from '@/data/mockData';
 import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info } from 'lucide-react';
 import { PredictionPhase, PredictionQuestion, PredictionOption } from '@/types/cricket';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // ─── Static prediction data for a MI vs CSK match ───────────────────────────
 
