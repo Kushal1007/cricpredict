@@ -6,6 +6,7 @@ import {
   Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DailyBonus from '@/components/DailyBonus';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -798,22 +799,25 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Daily Bonus */}
-            <div className="relative overflow-hidden rounded-2xl p-4 border border-yellow-400/25 bg-card/70 mb-5 lg:mb-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent" />
-              <div className="relative flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-yellow-400/15 border border-yellow-400/20 flex items-center justify-center text-xl">🎁</div>
-                  <div>
-                    <div className="font-rajdhani font-black text-sm">Daily Bonus</div>
-                    <div className="text-xs text-muted-foreground">Day {user?.loginStreak || 1} streak — claim now!</div>
-                  </div>
-                </div>
-                <button className="shrink-0 px-3 py-2 bg-yellow-400/15 border border-yellow-400/35 text-yellow-400 font-rajdhani font-black text-sm rounded-xl hover:bg-yellow-400/25 transition-colors">
-                  +{((user?.loginStreak || 1) * 50 + 50)} 🪙
-                </button>
-              </div>
+            {/* Daily Bonus — full component */}
+            <div className="mb-5 lg:mb-0">
+              <DailyBonus />
             </div>
+            {/* Demo Game CTA */}
+            <button
+              onClick={() => setCurrentPage('demo')}
+              className="w-full mt-3 mb-5 lg:mb-0 relative overflow-hidden rounded-2xl border border-primary/30 bg-card/70 p-4 text-left group hover:border-primary/50 transition-all"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/6 to-transparent pointer-events-none" />
+              <div className="relative flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-2xl shrink-0">🎮</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-rajdhani font-black text-sm leading-tight">Try Demo Game</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">Replay IPL 2024 Final &amp; learn how predictions work</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors shrink-0" />
+              </div>
+            </button>
           </div>
 
           {/* ── Right column: Schedule ────────────────────────────── */}
