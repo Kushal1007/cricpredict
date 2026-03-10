@@ -47,6 +47,7 @@ const AppRouter = () => {
       case 'leaderboard': return <LeaderboardPage />;
       case 'profile': return <ProfilePage />;
       case 'guide': return <GuidePage />;
+      case 'demo': return <DemoGamePage />;
       default: return <LandingPage />;
     }
   };
