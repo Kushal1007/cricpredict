@@ -6,6 +6,7 @@ import {
   Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import DailyBonus from '@/components/DailyBonus';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
