@@ -114,33 +114,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Auth state listener ───────────────────────────────────────────────────
   useEffect(() => {
+    // Safety-net: never block UI longer than 3 s even if DB is slow
+    const timeout = setTimeout(() => setAuthLoading(false), 3000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session: Session | null) => {
         if (session?.user) {
           setSupabaseUser(session.user);
-          // Fetch profile and admin status in parallel — cuts login wait in half
+          // ① Unblock the UI immediately — user is authenticated
+          setCurrentPage('dashboard');
+          setAuthLoading(false);
+          clearTimeout(timeout);
+          // ② Hydrate profile + admin in the background (non-blocking)
           const [, adminStatus] = await Promise.all([
             fetchProfile(session.user.id),
             checkIsAdmin(session.user.id),
           ]);
           setIsAdmin(adminStatus);
-          setCurrentPage(adminStatus ? 'admin' : 'dashboard');
+          if (adminStatus) setCurrentPage('admin');
         } else {
           setSupabaseUser(null);
           setIsAdmin(false);
           setProfile(null);
           setCurrentPage('landing');
+          setAuthLoading(false);
+          clearTimeout(timeout);
         }
-        setAuthLoading(false);
       }
     );
 
-    // Initial session check
+    // Initial session check — resolve loading immediately when no session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) setAuthLoading(false);
+      if (!session) {
+        setAuthLoading(false);
+        clearTimeout(timeout);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   // ── Auth: login ───────────────────────────────────────────────────────────
