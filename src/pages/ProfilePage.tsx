@@ -17,24 +17,45 @@ interface PredictionRow {
   created_at: string;
 }
 
+interface CoinTx {
+  id: string;
+  amount: number;
+  type: string;
+  description: string;
+  created_at: string;
+}
+
 const ProfilePage: React.FC = () => {
   const { user, setCurrentPage, logout } = useApp();
   const [predictions, setPredictions] = useState<PredictionRow[]>([]);
+  const [coinTxs, setCoinTxs] = useState<CoinTx[]>([]);
   const [predLoading, setPredLoading] = useState(false);
+  const [txLoading, setTxLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'predictions' | 'coins'>('coins');
 
   useEffect(() => {
     if (!user) return;
-    const load = async () => {
+    const loadPredictions = async () => {
       setPredLoading(true);
       const { data } = await supabase
         .from('predictions')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
       if (data) setPredictions(data as PredictionRow[]);
       setPredLoading(false);
     };
-    load();
+    const loadTxs = async () => {
+      setTxLoading(true);
+      const { data } = await (supabase.from('coin_transactions' as any) as any)
+        .select('id, amount, type, description, created_at')
+        .order('created_at', { ascending: false })
+        .limit(40);
+      if (data) setCoinTxs(data as CoinTx[]);
+      setTxLoading(false);
+    };
+    loadPredictions();
+    loadTxs();
   }, [user]);
 
   if (!user) return null;
