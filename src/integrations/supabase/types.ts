@@ -47,6 +47,60 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          ref_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          ref_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          ref_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_bonus_claims: {
+        Row: {
+          claimed_at: string
+          coins_given: number
+          id: string
+          streak_day: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          coins_given?: number
+          id?: string
+          streak_day?: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          coins_given?: number
+          id?: string
+          streak_day?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       predictions: {
         Row: {
           coins_won: number | null
