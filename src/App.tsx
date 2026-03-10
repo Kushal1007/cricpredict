@@ -13,6 +13,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import GuidePage from "@/pages/GuidePage";
 import AdminPage from "@/pages/AdminPage";
 import AdminLoginPage from "@/pages/AdminLoginPage";
+import DemoGamePage from "@/pages/DemoGamePage";
 
 
 const queryClient = new QueryClient();
