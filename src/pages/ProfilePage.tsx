@@ -187,39 +187,127 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Prediction History */}
-        <div className="bg-card/60 border border-border/60 rounded-2xl p-4 mb-5">
-          <h2 className="font-rajdhani font-black text-lg mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-secondary" /> Prediction History
-          </h2>
-          {predLoading ? (
-            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
-              <RefreshCw className="w-4 h-4 animate-spin" /> Loading...
-            </div>
-          ) : predictions.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-6">
-              No predictions yet. Start predicting to build your history! 🎯
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {predictions.map(p => (
-                <div key={p.id} className="flex items-start justify-between gap-3 bg-muted/30 border border-border/40 rounded-xl px-3 py-2.5">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold truncate">{p.question_text}</div>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-[10px] bg-muted/60 border border-border/50 px-2 py-0.5 rounded-lg text-muted-foreground">{phaseLabel(p.phase)}</span>
-                      <span className="text-[10px] text-muted-foreground">→ {p.option_label}</span>
+        {/* History Tabs */}
+        <div className="bg-card/60 border border-border/60 rounded-2xl overflow-hidden mb-5">
+          {/* Tab switcher */}
+          <div className="flex border-b border-border/50">
+            <button
+              onClick={() => setActiveTab('coins')}
+              className={`flex-1 py-3 text-sm font-bold font-rajdhani transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'coins' ? 'text-yellow-400 bg-yellow-400/5 border-b-2 border-yellow-400' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Coins className="w-4 h-4" /> Coin History
+            </button>
+            <button
+              onClick={() => setActiveTab('predictions')}
+              className={`flex-1 py-3 text-sm font-bold font-rajdhani transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'predictions' ? 'text-secondary bg-secondary/5 border-b-2 border-secondary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Clock className="w-4 h-4" /> Predictions
+            </button>
+          </div>
+
+          <div className="p-4">
+            {/* ── Coin History ── */}
+            {activeTab === 'coins' && (
+              <>
+                {txLoading ? (
+                  <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Loading…
+                  </div>
+                ) : coinTxs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-2">🪙</div>
+                    <p className="text-muted-foreground text-sm">No transactions yet.</p>
+                    <p className="text-muted-foreground text-xs mt-1">Claim your daily bonus to get started!</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary row */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {(() => {
+                        const earned = coinTxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+                        const spent  = coinTxs.filter(t => t.amount < 0).reduce((s, t) => s + t.amount, 0);
+                        return [
+                          { label: 'Total Earned', val: `+${earned.toLocaleString()}`, cls: 'text-primary' },
+                          { label: 'Total Spent',  val: spent.toLocaleString(),        cls: 'text-destructive' },
+                          { label: 'Net',          val: (earned + spent).toLocaleString(), cls: (earned + spent) >= 0 ? 'text-primary' : 'text-destructive' },
+                        ].map(s => (
+                          <div key={s.label} className="bg-muted/40 rounded-xl p-2.5 text-center border border-border/40">
+                            <div className={`font-rajdhani font-black text-base ${s.cls}`}>{s.val}</div>
+                            <div className="text-[10px] text-muted-foreground">{s.label}</div>
+                          </div>
+                        ));
+                      })()}
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-lg border font-bold capitalize ${resultStyle(p.result)}`}>
-                      {p.result === 'won' ? `+${p.coins_won}🪙` : p.result === 'lost' ? `-${p.cost_paid}🪙` : '⏳ Pending'}
-                    </span>
-                  </div>
+                    <div className="space-y-2 max-h-80 overflow-y-auto no-scrollbar">
+                      {coinTxs.map(tx => (
+                        <div key={tx.id} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${
+                          tx.amount > 0 ? 'bg-primary/5 border-primary/20' : 'bg-destructive/5 border-destructive/20'
+                        }`}>
+                          <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${
+                            tx.amount > 0 ? 'bg-primary/15' : 'bg-destructive/15'
+                          }`}>
+                            {tx.amount > 0
+                              ? <ArrowUpRight className="w-4 h-4 text-primary" />
+                              : <ArrowDownLeft className="w-4 h-4 text-destructive" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold truncate">{tx.description}</div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                          <div className={`font-rajdhani font-black text-sm shrink-0 ${tx.amount > 0 ? 'text-primary' : 'text-destructive'}`}>
+                            {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString()}🪙
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* ── Prediction History ── */}
+            {activeTab === 'predictions' && (
+              predLoading ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Loading…
                 </div>
-              ))}
-            </div>
-          )}
+              ) : predictions.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">🎯</div>
+                  <p className="text-muted-foreground text-sm">No predictions yet.</p>
+                  <p className="text-muted-foreground text-xs mt-1">Start predicting to build your history!</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto no-scrollbar">
+                  {predictions.map(p => (
+                    <div key={p.id} className="flex items-start justify-between gap-3 bg-muted/30 border border-border/40 rounded-xl px-3 py-2.5">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold truncate">{p.question_text}</div>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-[10px] bg-muted/60 border border-border/50 px-2 py-0.5 rounded-lg text-muted-foreground">{phaseLabel(p.phase)}</span>
+                          <span className="text-[10px] text-muted-foreground">→ {p.option_label}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-lg border font-bold capitalize ${resultStyle(p.result)}`}>
+                          {p.result === 'won' ? `+${p.coins_won}🪙` : p.result === 'lost' ? `-${p.cost_paid}🪙` : '⏳ Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
         </div>
 
         {/* Badges */}
