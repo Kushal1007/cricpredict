@@ -113,29 +113,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // ── Auth state listener ───────────────────────────────────────────────────
+  // IMPORTANT: Never await inside onAuthStateChange — it causes a Supabase deadlock
+  // where subsequent auth events never fire. Use a separate async handler instead.
   useEffect(() => {
-    // Safety-net: never block UI longer than 3 s even if DB is slow
-    const timeout = setTimeout(() => setAuthLoading(false), 3000);
+    const timeout = setTimeout(() => setAuthLoading(false), 4000);
+
+    // Separate async function so we never block the onAuthStateChange callback
+    const hydrateUser = async (uid: string, navigate: boolean) => {
+      const [, adminStatus] = await Promise.all([
+        fetchProfile(uid),
+        checkIsAdmin(uid),
+      ]);
+      setIsAdmin(adminStatus);
+      if (navigate) {
+        setCurrentPage(adminStatus ? 'admin' : 'dashboard');
+      }
+      setAuthLoading(false);
+      clearTimeout(timeout);
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session: Session | null) => {
+      (event, session: Session | null) => {
         if (session?.user) {
           setSupabaseUser(session.user);
-          // ① Unblock the loading spinner immediately — role check still pending
-          setAuthLoading(false);
-          clearTimeout(timeout);
-          // ② Resolve role + profile together, then navigate once we know the role
-          const [, adminStatus] = await Promise.all([
-            fetchProfile(session.user.id),
-            checkIsAdmin(session.user.id),
-          ]);
-          setIsAdmin(adminStatus);
-          // Only redirect on fresh sign-in events, not on token refreshes
-          if (event === 'SIGNED_IN') {
-            setCurrentPage(adminStatus ? 'admin' : 'dashboard');
-          } else if (event === 'INITIAL_SESSION') {
-            setCurrentPage(adminStatus ? 'admin' : 'dashboard');
-          }
+          // Navigate on fresh sign-in; on TOKEN_REFRESHED stay on current page
+          const shouldNavigate = event === 'SIGNED_IN';
+          // Call async hydration without awaiting (fire-and-forget)
+          hydrateUser(session.user.id, shouldNavigate);
         } else {
           setSupabaseUser(null);
           setIsAdmin(false);
@@ -147,9 +151,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
-    // Initial session check — resolve loading immediately when no session
+    // Initial session check — handles page refresh with existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+      if (session?.user) {
+        // Hydrate and navigate to correct page on app load
+        hydrateUser(session.user.id, true);
+      } else {
         setAuthLoading(false);
         clearTimeout(timeout);
       }
