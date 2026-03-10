@@ -121,17 +121,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       async (event, session: Session | null) => {
         if (session?.user) {
           setSupabaseUser(session.user);
-          // ① Unblock the UI immediately — user is authenticated
-          setCurrentPage('dashboard');
+          // ① Unblock the loading spinner immediately — role check still pending
           setAuthLoading(false);
           clearTimeout(timeout);
-          // ② Hydrate profile + admin in the background (non-blocking)
+          // ② Resolve role + profile together, then navigate once we know the role
           const [, adminStatus] = await Promise.all([
             fetchProfile(session.user.id),
             checkIsAdmin(session.user.id),
           ]);
           setIsAdmin(adminStatus);
-          if (adminStatus) setCurrentPage('admin');
+          // Only redirect on fresh sign-in events, not on token refreshes
+          if (event === 'SIGNED_IN') {
+            setCurrentPage(adminStatus ? 'admin' : 'dashboard');
+          } else if (event === 'INITIAL_SESSION') {
+            setCurrentPage(adminStatus ? 'admin' : 'dashboard');
+          }
         } else {
           setSupabaseUser(null);
           setIsAdmin(false);
