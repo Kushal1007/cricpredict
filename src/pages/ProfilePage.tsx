@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Coins, Trophy, Target, Zap, Star, ArrowLeft, TrendingUp, Calendar, RefreshCw, Clock } from 'lucide-react';
+import { Coins, Trophy, Target, Zap, Star, ArrowLeft, TrendingUp, Calendar, RefreshCw, Clock, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { MOCK_USER } from '@/data/mockData';
 
 interface PredictionRow {
