@@ -533,7 +533,77 @@ const MatchCard: React.FC<{
   );
 };
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+// ─── Season Stats (Orange & Purple Cap) ──────────────────────────────────────
+
+const SeasonStats: React.FC = () => {
+  const seasonStarted = IPL_PLAYER_STATS.some(p => p.matches > 0);
+  const orangeCap = [...IPL_PLAYER_STATS].sort((a, b) => b.runs - a.runs)[0];
+  const purpleCap = [...IPL_PLAYER_STATS].sort((a, b) => b.wickets - a.wickets)[0];
+  const orangeTeam = IPL_TEAMS.find(t => t.id === orangeCap.teamId);
+  const purpleTeam = IPL_TEAMS.find(t => t.id === purpleCap.teamId);
+  const tc_o = TEAM_COLORS[orangeCap.teamId];
+  const tc_p = TEAM_COLORS[purpleCap.teamId];
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-rajdhani text-xl font-bold flex items-center gap-2">
+          <BarChart2 className="w-5 h-5 text-neon-orange" />
+          Season Stats
+        </h2>
+        <span className="text-xs bg-muted/50 border border-border/40 text-muted-foreground px-2.5 py-0.5 rounded-full font-semibold">
+          IPL 2026
+        </span>
+      </div>
+
+      {!seasonStarted ? (
+        <div className="rounded-2xl border border-dashed border-border/50 bg-muted/20 p-5 text-center">
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <span className="text-3xl">🟠</span>
+            <span className="text-3xl">🟣</span>
+          </div>
+          <p className="font-rajdhani font-bold text-base mb-1">Stats Start on March 28</p>
+          <p className="text-xs text-muted-foreground">Orange Cap & Purple Cap leaders will appear here once the season begins.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Orange Cap */}
+          <div className="relative overflow-hidden rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-orange-500/5 p-4">
+            <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${tc_o.from} ${tc_o.to}`} />
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-lg">🟠</span>
+              <span className="text-[11px] font-black text-orange-400 uppercase tracking-wider">Orange Cap</span>
+            </div>
+            <div className="font-rajdhani font-black text-base leading-tight mb-0.5">{orangeCap.name}</div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <div className={`w-5 h-5 rounded flex items-center justify-center text-xs bg-gradient-to-br ${tc_o.from} ${tc_o.to}`}>{orangeTeam?.emoji}</div>
+              <span className="text-[11px] text-muted-foreground">{orangeTeam?.shortName}</span>
+            </div>
+            <div className="font-rajdhani font-black text-3xl text-orange-400">{orangeCap.runs}</div>
+            <div className="text-[10px] text-muted-foreground">runs · SR {orangeCap.strikeRate || '-'}</div>
+          </div>
+          {/* Purple Cap */}
+          <div className="relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4">
+            <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${tc_p.from} ${tc_p.to}`} />
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-lg">🟣</span>
+              <span className="text-[11px] font-black text-purple-400 uppercase tracking-wider">Purple Cap</span>
+            </div>
+            <div className="font-rajdhani font-black text-base leading-tight mb-0.5">{purpleCap.name}</div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <div className={`w-5 h-5 rounded flex items-center justify-center text-xs bg-gradient-to-br ${tc_p.from} ${tc_p.to}`}>{purpleTeam?.emoji}</div>
+              <span className="text-[11px] text-muted-foreground">{purpleTeam?.shortName}</span>
+            </div>
+            <div className="font-rajdhani font-black text-3xl text-purple-400">{purpleCap.wickets}</div>
+            <div className="text-[10px] text-muted-foreground">wickets · Eco {purpleCap.economy || '-'}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 
 const Dashboard: React.FC = () => {
   const { user, setCurrentPage, setSelectedMatchId, updateFavTeam } = useApp();
