@@ -225,7 +225,7 @@ const LandingPage: React.FC = () => {
             <h2 className="font-rajdhani text-3xl sm:text-4xl font-black mb-2">
               Why <span className="neon-text-green">CricPredict</span>?
             </h2>
-            <p className="text-muted-foreground text-sm">Everything you need for IPL 2026</p>
+            <p className="text-muted-foreground text-sm md:text-base">Everything you need for IPL 2026 — Season 19</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {features.map((f, i) => (
