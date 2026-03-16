@@ -592,7 +592,9 @@ const Dashboard: React.FC = () => {
   };
 
   const filteredSchedule = IPL_SCHEDULE.filter(m => {
-    const teamMatch = activeTab === 'fav' && favTeamId ? (m.team1Id === favTeamId || m.team2Id === favTeamId) : true;
+    const teamMatch = activeTab === 'fav' && favTeamId
+      ? (isAnnounced(m) && (m.team1Id === favTeamId || m.team2Id === favTeamId))
+      : true;
     const typeMatch = scheduleFilter === 'group' ? m.matchNumber <= 70 : scheduleFilter === 'playoffs' ? m.matchNumber > 70 : true;
     return teamMatch && typeMatch;
   });
