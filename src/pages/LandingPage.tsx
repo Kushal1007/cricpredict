@@ -73,7 +73,7 @@ const LandingPage: React.FC = () => {
 
   const stats = [
     { val: '10', label: 'IPL Teams', color: 'text-secondary' },
-    { val: '74', label: 'Matches', color: 'text-primary' },
+    { val: '84', label: 'Matches', color: 'text-primary' },
     { val: '₹20 Cr', label: 'Prize Pool', color: 'text-yellow-400' },
     { val: '🚫', label: 'Real Money', color: 'text-destructive' },
   ];
