@@ -897,21 +897,36 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3 max-h-[75vh] lg:max-h-none overflow-y-auto no-scrollbar lg:overflow-visible">
-                {filteredSchedule.map(m => (
-                  <MatchCard
-                    key={m.id}
-                    matchNumber={m.matchNumber}
-                    team1Id={m.team1Id}
-                    team2Id={m.team2Id}
-                    date={m.date}
-                    time={m.time}
-                    venue={m.venue}
-                    city={m.city}
-                    status={m.status}
-                    favTeamId={favTeamId}
-                    onPredict={() => { setSelectedMatchId(m.id); setCurrentPage('matches'); }}
-                  />
-                ))}
+                {filteredSchedule.map(m => {
+                  if (!isAnnounced(m)) {
+                    return (
+                      <div key={m.id} className="rounded-2xl border border-dashed border-border/40 bg-muted/20 p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
+                          <Calendar className="w-4 h-4 text-muted-foreground/50" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-muted-foreground/70">Match {m.matchNumber}</div>
+                          <div className="text-[11px] text-muted-foreground/50 mt-0.5">📅 Yet to be Announced — check back soon</div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <MatchCard
+                      key={m.id}
+                      matchNumber={m.matchNumber}
+                      team1Id={m.team1Id}
+                      team2Id={m.team2Id}
+                      date={m.date}
+                      time={m.time}
+                      venue={m.venue}
+                      city={m.city}
+                      status={m.status}
+                      favTeamId={favTeamId}
+                      onPredict={() => { setSelectedMatchId(m.id); setCurrentPage('matches'); }}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
