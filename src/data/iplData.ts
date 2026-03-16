@@ -557,3 +557,61 @@ export const IPL_POINTS_TABLE: PointsTableEntry[] = [
   { teamId: 'pbks', played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr: 0.000, form: [] },
   { teamId: 'lsg',  played: 0, won: 0, lost: 0, nr: 0, pts: 0, nrr: 0.000, form: [] },
 ];
+
+// ─── Player Season Stats ──────────────────────────────────────────────────────
+// Update these as the season progresses.
+// Orange Cap = most runs | Purple Cap = most wickets
+
+export interface PlayerSeasonStat {
+  name: string;
+  teamId: string;
+  role: 'bat' | 'bowl' | 'all';
+  // batting
+  matches: number;
+  runs: number;
+  innings: number;
+  highScore: number;
+  average: number;
+  strikeRate: number;
+  fifties: number;
+  hundreds: number;
+  fours: number;
+  sixes: number;
+  // bowling
+  wickets: number;
+  bowlingInnings: number;
+  economy: number;
+  bestFigures: string; // e.g. "4/18"
+  fiveWickets: number;
+}
+
+// Season has NOT started — all stats are 0. Update after each match.
+export const IPL_PLAYER_STATS: PlayerSeasonStat[] = [
+  // ── Batsmen / All-rounders ───────────────────────────────────────────
+  { name: 'Virat Kohli',       teamId: 'rcb',  role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Rohit Sharma',      teamId: 'mi',   role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Shubman Gill',      teamId: 'gt',   role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Yashasvi Jaiswal',  teamId: 'rr',   role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Rishabh Pant',      teamId: 'lsg',  role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Suryakumar Yadav',  teamId: 'mi',   role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Travis Head',       teamId: 'srh',  role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Ruturaj Gaikwad',   teamId: 'csk',  role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'KL Rahul',          teamId: 'dc',   role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Cameron Green',     teamId: 'kkr',  role: 'all', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Hardik Pandya',     teamId: 'mi',   role: 'all', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Sunil Narine',      teamId: 'kkr',  role: 'all', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Heinrich Klaasen',  teamId: 'srh',  role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Riyan Parag',       teamId: 'rr',   role: 'all', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Nicholas Pooran',   teamId: 'lsg',  role: 'bat', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  // ── Bowlers ───────────────────────────────────────────────────────────
+  { name: 'Jasprit Bumrah',    teamId: 'mi',   role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Rashid Khan',       teamId: 'gt',   role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Mohammed Shami',    teamId: 'lsg',  role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Arshdeep Singh',    teamId: 'pbks', role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Pat Cummins',       teamId: 'srh',  role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Matheesha Pathirana',teamId: 'kkr', role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Kuldeep Yadav',     teamId: 'dc',   role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Josh Hazlewood',    teamId: 'rcb',  role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Jofra Archer',      teamId: 'rr',   role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+  { name: 'Yuzvendra Chahal',  teamId: 'pbks', role: 'bowl', matches: 0, runs: 0, innings: 0, highScore: 0, average: 0, strikeRate: 0, fifties: 0, hundreds: 0, fours: 0, sixes: 0, wickets: 0, bowlingInnings: 0, economy: 0, bestFigures: '-', fiveWickets: 0 },
+];
