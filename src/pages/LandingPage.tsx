@@ -73,7 +73,7 @@ const LandingPage: React.FC = () => {
 
   const stats = [
     { val: '10', label: 'IPL Teams', color: 'text-secondary' },
-    { val: '74', label: 'Matches', color: 'text-primary' },
+    { val: '84', label: 'Matches', color: 'text-primary' },
     { val: '₹20 Cr', label: 'Prize Pool', color: 'text-yellow-400' },
     { val: '🚫', label: 'Real Money', color: 'text-destructive' },
   ];
@@ -106,9 +106,9 @@ const LandingPage: React.FC = () => {
             <span className="neon-text-blue">Dominate</span> IPL.
           </h1>
 
-          <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
-            Phase-based predictions across all 74 IPL 2026 matches. Pre-match odds, Powerplay polls & Innings-Break specials — like sports betting, but 100% free.
-          </p>
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
+              Phase-based predictions across all 84 IPL 2026 matches. Pre-match odds, Powerplay polls & Innings-Break specials — like sports betting, but 100% free.
+            </p>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mb-10">
             <button
@@ -225,7 +225,7 @@ const LandingPage: React.FC = () => {
             <h2 className="font-rajdhani text-3xl sm:text-4xl font-black mb-2">
               Why <span className="neon-text-green">CricPredict</span>?
             </h2>
-            <p className="text-muted-foreground text-sm">Everything you need for IPL 2026</p>
+            <p className="text-muted-foreground text-sm md:text-base">Everything you need for IPL 2026 — Season 19</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {features.map((f, i) => (
