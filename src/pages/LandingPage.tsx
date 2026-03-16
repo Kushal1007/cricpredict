@@ -106,9 +106,9 @@ const LandingPage: React.FC = () => {
             <span className="neon-text-blue">Dominate</span> IPL.
           </h1>
 
-          <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
-            Phase-based predictions across all 74 IPL 2026 matches. Pre-match odds, Powerplay polls & Innings-Break specials — like sports betting, but 100% free.
-          </p>
+            <p className="text-muted-foreground text-sm sm:text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed">
+              Phase-based predictions across all 84 IPL 2026 matches. Pre-match odds, Powerplay polls & Innings-Break specials — like sports betting, but 100% free.
+            </p>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mb-10">
             <button
