@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPLTeam } from '@/data/iplData';
+import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPL_PLAYER_STATS, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
 import {
   Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp,
-  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone
+  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone, BarChart2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DailyBonus from '@/components/DailyBonus';
+
+const isAnnounced = (m: IPLScheduleEntry): m is IPLMatch => !('tba' in m && m.tba);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
