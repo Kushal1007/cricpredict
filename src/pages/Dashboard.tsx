@@ -728,7 +728,10 @@ const Dashboard: React.FC = () => {
         {/* ── Points Table ─────────────────────────────────────── */}
         <PointsTable favTeamId={favTeamId} />
 
-        {/* ── Two-column layout on tablet/desktop ─────────────── */}
+        {/* ── Season Stats: Orange & Purple Cap ────────────────── */}
+        <SeasonStats />
+
+
         <div className="lg:grid lg:grid-cols-5 lg:gap-6">
 
           {/* ── Left column ──────────────────────────────────────── */}
