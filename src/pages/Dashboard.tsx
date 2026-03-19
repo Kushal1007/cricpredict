@@ -3,12 +3,40 @@ import { useApp } from '@/context/AppContext';
 import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPL_PLAYER_STATS, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
 import {
   Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp,
-  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone, BarChart2
+  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone, BarChart2, Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DailyBonus from '@/components/DailyBonus';
 
 const isAnnounced = (m: IPLScheduleEntry): m is IPLMatch => !('tba' in m && m.tba);
+
+/**
+ * Returns prediction window status for a match.
+ * Opens 24 hours before match start, closes when live/completed.
+ */
+const getPredictStatus = (dateStr: string, timeStr: string, status: string) => {
+  if (status === 'live') return { open: true, isLive: true, hoursUntil: 0, daysUntil: 0 };
+  if (status === 'completed') return { open: false, isLive: false, hoursUntil: -1, daysUntil: -1 };
+
+  // Parse match datetime (assume IST = UTC+5:30)
+  // dateStr: "2026-03-28", timeStr: "19:30"
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.replace(' IST', '').split(':').map(Number);
+  // Build as local date and adjust for IST offset
+  const matchDate = new Date(Date.UTC(year, month - 1, day, hour - 5, minute - 30));
+  const now = Date.now();
+  const msUntil = matchDate.getTime() - now;
+  const hoursUntil = msUntil / 3600000;
+  const daysUntil = Math.ceil(hoursUntil / 24);
+
+  return {
+    open: hoursUntil <= 24 && hoursUntil > 0,
+    isLive: false,
+    hoursUntil,
+    daysUntil,
+    matchDate,
+  };
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
