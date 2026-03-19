@@ -996,7 +996,7 @@ const Dashboard: React.FC = () => {
                       city={m.city}
                       status={m.status}
                       favTeamId={favTeamId}
-                      onPredict={() => { setSelectedMatchId(m.id); setCurrentPage('matches'); }}
+                      onPredict={() => { setSelectedMatchId(m.id); setCurrentPage('live-match'); }}
                     />
                   );
                 })}

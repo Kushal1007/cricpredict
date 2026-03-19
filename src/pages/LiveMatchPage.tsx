@@ -1,10 +1,138 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { MOCK_MATCHES } from '@/data/mockData';
-import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info } from 'lucide-react';
+import { IPL_SCHEDULE, IPL_TEAMS, IPLMatch } from '@/data/iplData';
+import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info, Calendar, MapPin, Swords } from 'lucide-react';
 import { PredictionPhase, PredictionQuestion, PredictionOption } from '@/types/cricket';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+// ─── Helper: get team from IPL_TEAMS ────────────────────────────────────────
+const getIPLTeam = (id: string) => IPL_TEAMS.find(t => t.id === id);
+const TEAM_COLORS: Record<string, { from: string; to: string }> = {
+  mi:   { from: 'from-blue-600',   to: 'to-blue-400'   },
+  csk:  { from: 'from-yellow-500', to: 'to-amber-400'  },
+  rcb:  { from: 'from-red-600',    to: 'to-rose-400'   },
+  kkr:  { from: 'from-purple-600', to: 'to-violet-400' },
+  dc:   { from: 'from-blue-500',   to: 'to-sky-400'    },
+  srh:  { from: 'from-orange-600', to: 'to-amber-500'  },
+  rr:   { from: 'from-pink-600',   to: 'to-rose-400'   },
+  pbks: { from: 'from-red-500',    to: 'to-orange-400' },
+  lsg:  { from: 'from-cyan-500',   to: 'to-teal-400'   },
+  gt:   { from: 'from-sky-600',    to: 'to-cyan-400'   },
+};
+
+// ─── Match Picker ────────────────────────────────────────────────────────────
+const MatchPicker: React.FC<{ onPick: (matchId: string) => void; onBack: () => void }> = ({ onPick, onBack }) => {
+  const announcedMatches = IPL_SCHEDULE.filter(
+    (m): m is IPLMatch => !('tba' in m && m.tba)
+  );
+
+  return (
+    <div className="min-h-screen bg-background pt-14 md:pt-16 pb-12">
+      <div className="container mx-auto px-3 sm:px-4 max-w-3xl py-5">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors mb-5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Back to Dashboard</span>
+        </button>
+
+        <div className="mb-6">
+          <h1 className="font-rajdhani text-3xl font-black mb-1">
+            🏏 <span className="neon-text-green">Live Matches</span>
+          </h1>
+          <p className="text-muted-foreground text-sm">Select a match to make your predictions</p>
+        </div>
+
+        <div className="space-y-3">
+          {announcedMatches.map(m => {
+            const t1 = getIPLTeam(m.team1Id);
+            const t2 = getIPLTeam(m.team2Id);
+            const tc1 = TEAM_COLORS[m.team1Id];
+            const tc2 = TEAM_COLORS[m.team2Id];
+            const isLive = m.status === 'live';
+            const isCompleted = m.status === 'completed';
+
+            return (
+              <button
+                key={m.id}
+                onClick={() => !isCompleted && onPick(m.id)}
+                disabled={isCompleted}
+                className={`w-full text-left relative overflow-hidden rounded-2xl border transition-all group ${
+                  isLive
+                    ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.15)] hover:border-red-500/70'
+                    : isCompleted
+                    ? 'border-border/30 opacity-50 cursor-not-allowed'
+                    : 'border-border/60 hover:border-primary/40 hover:shadow-lg'
+                }`}
+              >
+                {isLive && <div className="h-0.5 w-full bg-gradient-to-r from-red-600/60 via-red-500 to-red-600/60 animate-pulse" />}
+                <div className="p-4 bg-card/70 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
+                      isLive ? 'bg-red-500/15 border-red-500/30 text-red-400' :
+                      isCompleted ? 'bg-muted/60 border-border/50 text-muted-foreground' :
+                      'bg-muted/60 border-border/50 text-muted-foreground'
+                    }`}>
+                      {isLive ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="live-pulse w-1.5 h-1.5 bg-red-400 rounded-full inline-block" />
+                          LIVE
+                        </span>
+                      ) : isCompleted ? '✅ Completed' : `Match ${m.matchNumber}`}
+                    </span>
+                    <div className="text-right">
+                      <div className="text-[11px] font-semibold">
+                        {new Date(m.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">{m.time} IST</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1 flex items-center gap-2.5">
+                      <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-gradient-to-br ${tc1.from} ${tc1.to} shadow-md`}>
+                        {t1?.emoji}
+                      </div>
+                      <div className="font-rajdhani font-black text-base">{t1?.shortName}</div>
+                    </div>
+                    <div className="shrink-0 w-8 h-8 rounded-full bg-muted/60 border border-border/50 flex items-center justify-center">
+                      <Swords className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 flex items-center gap-2.5 justify-end">
+                      <div className="font-rajdhani font-black text-base">{t2?.shortName}</div>
+                      <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-gradient-to-br ${tc2.from} ${tc2.to} shadow-md`}>
+                        {t2?.emoji}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{m.venue}, {m.city}</span>
+                    </div>
+                    {!isCompleted && (
+                      <span className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                        isLive
+                          ? 'bg-red-500/20 border border-red-500/40 text-red-400'
+                          : 'bg-primary/15 border border-primary/30 text-primary group-hover:bg-primary/25'
+                      }`}>
+                        {isLive ? '🔴 Predict Live' : '🎯 Predict'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Static prediction data for a MI vs CSK match ───────────────────────────
 
@@ -360,15 +488,32 @@ const PHASES: { key: PredictionPhase; questions: PredictionQuestion[] }[] = [
 ];
 
 const LiveMatchPage: React.FC = () => {
-  const { selectedMatchId, setCurrentPage, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
+  const { selectedMatchId, setCurrentPage, setSelectedMatchId, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
   const { toast } = useToast();
-  const match = MOCK_MATCHES.find(m => m.id === selectedMatchId) || MOCK_MATCHES[0];
 
+  // All hooks must be at top level — before any early returns
+  const [pickedMatchId, setPickedMatchId] = useState<string | null>(selectedMatchId);
   const [activePhase, setActivePhase] = useState<PredictionPhase>('pre-match');
-  // Map questionId → chosen optionId
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [streak, setStreak] = useState(user?.streak || 0);
   const [submitting, setSubmitting] = useState<string | null>(null);
+
+  const handlePickMatch = (id: string) => {
+    setPickedMatchId(id);
+    setSelectedMatchId(id);
+  };
+
+  const handleBackToPicker = () => {
+    setPickedMatchId(null);
+    setSelectedMatchId(null);
+  };
+
+  // Show picker if no match chosen
+  if (!pickedMatchId) {
+    return <MatchPicker onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+  }
+
+  const match = MOCK_MATCHES.find(m => m.id === pickedMatchId) || MOCK_MATCHES[0];
 
   const handleAnswer = async (qId: string, optId: string, cost: number) => {
     if (!user || user.coins < cost) {
@@ -453,11 +598,11 @@ const LiveMatchPage: React.FC = () => {
       <div className="border-b border-border bg-surface/50 backdrop-blur-sm sticky top-14 md:top-16 z-10">
         <div className="container mx-auto px-3 sm:px-4 max-w-3xl py-3 flex items-center justify-between">
           <button
-            onClick={() => setCurrentPage('dashboard')}
+            onClick={handleBackToPicker}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">All Matches</span>
           </button>
 
           <div className="flex items-center gap-2">
