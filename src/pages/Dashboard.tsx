@@ -459,7 +459,37 @@ const MatchCard: React.FC<{
   const hasFav = !!(favTeamId && (team1Id === favTeamId || team2Id === favTeamId));
   const tc1 = TEAM_COLORS[team1Id];
   const tc2 = TEAM_COLORS[team2Id];
-  const isLive = status === 'live';
+
+  const ps = getPredictStatus(date, time, status);
+  const isLive = ps.isLive;
+  const predictOpen = ps.open;
+
+  // Live countdown for the 24h window
+  const [openCountdown, setOpenCountdown] = useState('');
+  useEffect(() => {
+    if (predictOpen || isLive || ps.hoursUntil <= 0) return;
+    if (!ps.matchDate) return;
+
+    // The window opens 24h before match
+    const opensAt = new Date(ps.matchDate.getTime() - 24 * 3600 * 1000);
+    const fmt = () => {
+      const diff = Math.max(0, opensAt.getTime() - Date.now());
+      if (diff === 0) return '';
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      if (d > 0) return `${d}d ${h}h`;
+      return `${h}h ${m}m`;
+    };
+    setOpenCountdown(fmt());
+    const t = setInterval(() => setOpenCountdown(fmt()), 60000);
+    return () => clearInterval(t);
+  }, [date, time, status]);
+
+  const handlePredictClick = () => {
+    if (predictOpen || isLive) onPredict();
+    // else: button is disabled — tooltip shows via title attr
+  };
 
   return (
     <div className={`relative overflow-hidden rounded-2xl border transition-all duration-200 group ${
@@ -469,7 +499,6 @@ const MatchCard: React.FC<{
         ? 'border-primary/40 shadow-[0_0_16px_hsl(150_100%_50%/0.1)]'
         : 'border-border/60 hover:border-border hover:shadow-lg'
     }`}>
-      {/* Top accent line */}
       {hasFav && !isLive && (
         <div className="h-0.5 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
       )}
@@ -507,7 +536,6 @@ const MatchCard: React.FC<{
 
         {/* Teams VS section */}
         <div className="flex items-center gap-3 mb-3">
-          {/* Team 1 */}
           <div className="flex-1 flex items-center gap-2.5">
             <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-gradient-to-br ${tc1.from} ${tc1.to} shadow-md`}>
               {t1.emoji}
@@ -517,15 +545,9 @@ const MatchCard: React.FC<{
               <div className="text-[10px] text-muted-foreground hidden sm:block truncate">{t1.name}</div>
             </div>
           </div>
-
-          {/* VS badge */}
-          <div className="shrink-0 flex flex-col items-center">
-            <div className="w-8 h-8 rounded-full bg-muted/60 border border-border/50 flex items-center justify-center">
-              <Swords className="w-3.5 h-3.5 text-muted-foreground" />
-            </div>
+          <div className="shrink-0 w-8 h-8 rounded-full bg-muted/60 border border-border/50 flex items-center justify-center">
+            <Swords className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
-
-          {/* Team 2 */}
           <div className="flex-1 flex items-center gap-2.5 justify-end">
             <div className="min-w-0 text-right">
               <div className="font-rajdhani font-black text-base leading-tight">{t2.shortName}</div>
@@ -543,18 +565,37 @@ const MatchCard: React.FC<{
             <MapPin className="w-3 h-3 shrink-0" />
             <span className="truncate">{venue}, {city}</span>
           </div>
-          <button
-            onClick={onPredict}
-            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
-              isLive
-                ? 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'
-                : hasFav
-                ? 'bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25'
-                : 'bg-muted/60 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            {isLive ? '🔴 Predict Live' : '🎯 Predict'}
-          </button>
+
+          {/* Predict CTA — 3 states: locked / open-soon / open */}
+          {isLive ? (
+            <button
+              onClick={handlePredictClick}
+              className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-all"
+            >
+              🔴 Predict Live
+            </button>
+          ) : predictOpen ? (
+            <button
+              onClick={handlePredictClick}
+              className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                hasFav
+                  ? 'bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25'
+                  : 'bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20'
+              }`}
+            >
+              🎯 Predict
+            </button>
+          ) : (
+            <div className="shrink-0 flex items-center gap-1.5 bg-muted/40 border border-border/40 rounded-xl px-2.5 py-1.5">
+              <Clock className="w-3 h-3 text-muted-foreground/70 shrink-0" />
+              <div className="text-right">
+                <div className="text-[10px] text-muted-foreground/70 leading-tight">Opens in</div>
+                <div className="text-[10px] font-bold text-muted-foreground tabular-nums leading-tight">
+                  {openCountdown || (ps.daysUntil > 0 ? `${ps.daysUntil}d` : '24h before')}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
