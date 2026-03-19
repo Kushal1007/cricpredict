@@ -491,8 +491,12 @@ const LiveMatchPage: React.FC = () => {
   const { selectedMatchId, setCurrentPage, setSelectedMatchId, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
   const { toast } = useToast();
 
-  // If no match is selected, show the match picker
+  // All hooks must be at top level — before any early returns
   const [pickedMatchId, setPickedMatchId] = useState<string | null>(selectedMatchId);
+  const [activePhase, setActivePhase] = useState<PredictionPhase>('pre-match');
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [streak, setStreak] = useState(user?.streak || 0);
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
   const handlePickMatch = (id: string) => {
     setPickedMatchId(id);
@@ -510,12 +514,6 @@ const LiveMatchPage: React.FC = () => {
   }
 
   const match = MOCK_MATCHES.find(m => m.id === pickedMatchId) || MOCK_MATCHES[0];
-
-  const [activePhase, setActivePhase] = useState<PredictionPhase>('pre-match');
-  // Map questionId → chosen optionId
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [streak, setStreak] = useState(user?.streak || 0);
-  const [submitting, setSubmitting] = useState<string | null>(null);
 
   const handleAnswer = async (qId: string, optId: string, cost: number) => {
     if (!user || user.coins < cost) {
