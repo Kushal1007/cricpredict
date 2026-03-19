@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/context/AppContext';
 
 const DAY_REWARDS = [100, 150, 150, 200, 200, 250, 500];
-const STREAK_LABELS = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7+'];
 
 interface BonusState {
   canClaim: boolean;
@@ -12,8 +11,21 @@ interface BonusState {
   lastClaim: Date | null;
   loading: boolean;
   claiming: boolean;
-  claimed: boolean; // just claimed this session
+  claimed: boolean;
 }
+
+/** Returns the next midnight (00:00:00.000) in local time as a Date */
+const getNextMidnight = (): Date => {
+  const d = new Date();
+  d.setHours(24, 0, 0, 0); // tomorrow 00:00:00
+  return d;
+};
+
+/** Returns true if two dates fall on the same calendar day (local time) */
+const isSameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
 const DailyBonus: React.FC = () => {
   const { user, updateCoins, triggerCoinAnimation } = useApp();
@@ -21,6 +33,7 @@ const DailyBonus: React.FC = () => {
     canClaim: false, streakDay: 1, nextClaimAt: null, lastClaim: null,
     loading: true, claiming: false, claimed: false,
   });
+  const [countdown, setCountdown] = useState('');
 
   const checkBonus = useCallback(async () => {
     if (!user) return;
@@ -33,30 +46,56 @@ const DailyBonus: React.FC = () => {
       .maybeSingle() as any;
 
     const now = new Date();
+
     if (!data) {
       setState(s => ({ ...s, canClaim: true, streakDay: 1, loading: false }));
       return;
     }
 
     const last = new Date(data.claimed_at);
-    const hoursSince = (now.getTime() - last.getTime()) / 3600000;
-    const daysSince = Math.floor(hoursSince / 24);
+    const claimedToday = isSameDay(last, now);
 
-    // Streak: within 48h keeps streak, otherwise resets
+    // Streak: if claimed yesterday or today keep streak, else reset
+    const daysSince = Math.floor((now.getTime() - last.getTime()) / 86400000);
     const streakDay = daysSince <= 1 ? Math.min(data.streak_day + 1, 7) : 1;
-    const nextClaim = new Date(last.getTime() + 24 * 3600 * 1000);
+
+    // Next claim window opens at next midnight
+    const nextMidnight = getNextMidnight();
 
     setState(s => ({
       ...s,
-      canClaim: hoursSince >= 24,
-      streakDay,
-      nextClaimAt: hoursSince < 24 ? nextClaim : null,
+      canClaim: !claimedToday,
+      streakDay: claimedToday ? data.streak_day : streakDay,
+      nextClaimAt: claimedToday ? nextMidnight : null,
       lastClaim: last,
       loading: false,
     }));
   }, [user]);
 
   useEffect(() => { checkBonus(); }, [checkBonus]);
+
+  // Countdown ticks every second toward next midnight
+  useEffect(() => {
+    if (!state.nextClaimAt) { setCountdown(''); return; }
+    const fmt = (target: Date) => {
+      const diff = Math.max(0, target.getTime() - Date.now());
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+    };
+    setCountdown(fmt(state.nextClaimAt));
+    const t = setInterval(() => {
+      const remaining = state.nextClaimAt!.getTime() - Date.now();
+      if (remaining <= 0) {
+        clearInterval(t);
+        setState(s => ({ ...s, canClaim: true, nextClaimAt: null }));
+      } else {
+        setCountdown(fmt(state.nextClaimAt!));
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [state.nextClaimAt]);
 
   const claim = async () => {
     if (!user || !state.canClaim || state.claiming) return;
@@ -70,7 +109,6 @@ const DailyBonus: React.FC = () => {
 
     if (error) { setState(s => ({ ...s, claiming: false })); return; }
 
-    // Log transaction
     await supabase.from('coin_transactions' as any).insert({
       user_id: user.id,
       amount: coinsToGive,
@@ -81,25 +119,14 @@ const DailyBonus: React.FC = () => {
     await updateCoins(coinsToGive);
     triggerCoinAnimation(coinsToGive);
 
-    const next = new Date(Date.now() + 24 * 3600 * 1000);
-    setState(s => ({ ...s, claiming: false, canClaim: false, claimed: true, nextClaimAt: next }));
+    setState(s => ({
+      ...s,
+      claiming: false,
+      canClaim: false,
+      claimed: true,
+      nextClaimAt: getNextMidnight(),
+    }));
   };
-
-  const formatCountdown = (target: Date) => {
-    const diff = Math.max(0, target.getTime() - Date.now());
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    return `${h}h ${m}m ${s}s`;
-  };
-
-  const [countdown, setCountdown] = useState('');
-  useEffect(() => {
-    if (!state.nextClaimAt) return;
-    const t = setInterval(() => setCountdown(formatCountdown(state.nextClaimAt!)), 1000);
-    setCountdown(formatCountdown(state.nextClaimAt));
-    return () => clearInterval(t);
-  }, [state.nextClaimAt]);
 
   if (!user) return null;
 
@@ -107,7 +134,6 @@ const DailyBonus: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-yellow-400/30 bg-card/70">
-      {/* Glow background */}
       <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/8 via-transparent to-transparent pointer-events-none" />
 
       <div className="relative p-4">
@@ -118,7 +144,7 @@ const DailyBonus: React.FC = () => {
             <div>
               <div className="font-rajdhani font-black text-sm leading-tight">Daily Bonus</div>
               <div className="text-[10px] text-muted-foreground">
-                {state.streakDay > 1 ? `🔥 ${state.streakDay}-Day Streak` : 'Login daily for multipliers'}
+                {state.streakDay > 1 ? `🔥 ${state.streakDay}-Day Streak` : 'Resets every day at midnight'}
               </div>
             </div>
           </div>
@@ -133,7 +159,6 @@ const DailyBonus: React.FC = () => {
             const dayNum = i + 1;
             const isPast = state.streakDay > dayNum;
             const isToday = state.streakDay === dayNum;
-            const isFuture = state.streakDay < dayNum;
             return (
               <div
                 key={i}
@@ -169,9 +194,15 @@ const DailyBonus: React.FC = () => {
             {state.claiming ? 'Claiming…' : `Claim +${todayReward} 🪙`}
           </button>
         ) : (
-          <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2.5 border border-border/40">
-            <span className="text-xs text-muted-foreground">Next bonus in</span>
-            <span className="font-rajdhani font-black text-sm text-yellow-400 tabular-nums">{countdown || '…'}</span>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between bg-muted/30 rounded-xl px-3 py-2.5 border border-border/40">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🌙</span>
+                <span className="text-xs text-muted-foreground">Resets at midnight</span>
+              </div>
+              <span className="font-rajdhani font-black text-sm text-yellow-400 tabular-nums">{countdown || '…'}</span>
+            </div>
+            <p className="text-[10px] text-center text-muted-foreground/60">Come back after 12:00 AM to claim tomorrow's bonus</p>
           </div>
         )}
       </div>
