@@ -42,7 +42,7 @@ const AppRouter = () => {
       case 'login': return <LoginPage />;
       case 'signup': return <SignupPage />;
       case 'dashboard': return <Dashboard />;
-      case 'matches': return <Dashboard />;
+      case 'matches': return <LiveMatchPage />;
       case 'live-match': return <LiveMatchPage />;
       case 'leaderboard': return <LeaderboardPage />;
       case 'profile': return <ProfilePage />;
