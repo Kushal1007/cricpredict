@@ -488,9 +488,28 @@ const PHASES: { key: PredictionPhase; questions: PredictionQuestion[] }[] = [
 ];
 
 const LiveMatchPage: React.FC = () => {
-  const { selectedMatchId, setCurrentPage, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
+  const { selectedMatchId, setCurrentPage, setSelectedMatchId, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
   const { toast } = useToast();
-  const match = MOCK_MATCHES.find(m => m.id === selectedMatchId) || MOCK_MATCHES[0];
+
+  // If no match is selected, show the match picker
+  const [pickedMatchId, setPickedMatchId] = useState<string | null>(selectedMatchId);
+
+  const handlePickMatch = (id: string) => {
+    setPickedMatchId(id);
+    setSelectedMatchId(id);
+  };
+
+  const handleBackToPicker = () => {
+    setPickedMatchId(null);
+    setSelectedMatchId(null);
+  };
+
+  // Show picker if no match chosen
+  if (!pickedMatchId) {
+    return <MatchPicker onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+  }
+
+  const match = MOCK_MATCHES.find(m => m.id === pickedMatchId) || MOCK_MATCHES[0];
 
   const [activePhase, setActivePhase] = useState<PredictionPhase>('pre-match');
   // Map questionId → chosen optionId
