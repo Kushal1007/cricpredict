@@ -598,11 +598,11 @@ const LiveMatchPage: React.FC = () => {
       <div className="border-b border-border bg-surface/50 backdrop-blur-sm sticky top-14 md:top-16 z-10">
         <div className="container mx-auto px-3 sm:px-4 max-w-3xl py-3 flex items-center justify-between">
           <button
-            onClick={() => setCurrentPage('dashboard')}
+            onClick={handleBackToPicker}
             className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">All Matches</span>
           </button>
 
           <div className="flex items-center gap-2">
