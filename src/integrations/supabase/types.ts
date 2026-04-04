@@ -47,6 +47,53 @@ export type Database = {
         }
         Relationships: []
       }
+      ball_events: {
+        Row: {
+          ball_number: number
+          batsman: string | null
+          bowler: string | null
+          commentary: string | null
+          created_at: string
+          event_type: string
+          id: string
+          match_id: string
+          over_number: number
+          runs: number
+        }
+        Insert: {
+          ball_number: number
+          batsman?: string | null
+          bowler?: string | null
+          commentary?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id: string
+          over_number: number
+          runs?: number
+        }
+        Update: {
+          ball_number?: number
+          batsman?: string | null
+          bowler?: string | null
+          commentary?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id?: string
+          over_number?: number
+          runs?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ball_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["match_id"]
+          },
+        ]
+      }
       coin_transactions: {
         Row: {
           amount: number
@@ -98,6 +145,87 @@ export type Database = {
           id?: string
           streak_day?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          batting_team: string | null
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          match_id: string
+          match_type: string | null
+          overs: string | null
+          raw_data: Json | null
+          result: string | null
+          run_rate: number | null
+          score1: string | null
+          score2: string | null
+          start_time: string | null
+          status: string
+          team1: string
+          team1_img: string | null
+          team1_short: string
+          team2: string
+          team2_img: string | null
+          team2_short: string
+          toss_decision: string | null
+          toss_winner: string | null
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          batting_team?: string | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          match_id: string
+          match_type?: string | null
+          overs?: string | null
+          raw_data?: Json | null
+          result?: string | null
+          run_rate?: number | null
+          score1?: string | null
+          score2?: string | null
+          start_time?: string | null
+          status?: string
+          team1: string
+          team1_img?: string | null
+          team1_short?: string
+          team2: string
+          team2_img?: string | null
+          team2_short?: string
+          toss_decision?: string | null
+          toss_winner?: string | null
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          batting_team?: string | null
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          match_id?: string
+          match_type?: string | null
+          overs?: string | null
+          raw_data?: Json | null
+          result?: string | null
+          run_rate?: number | null
+          score1?: string | null
+          score2?: string | null
+          start_time?: string | null
+          status?: string
+          team1?: string
+          team1_img?: string | null
+          team1_short?: string
+          team2?: string
+          team2_img?: string | null
+          team2_short?: string
+          toss_decision?: string | null
+          toss_winner?: string | null
+          updated_at?: string
+          venue?: string | null
         }
         Relationships: []
       }
