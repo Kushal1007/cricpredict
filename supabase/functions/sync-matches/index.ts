@@ -1,44 +1,41 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 
-const CRICBUZZ_BASE = "https://cricbuzz-live.vercel.app/v1";
+const CRICAPI_BASE = "https://api.cricapi.com/v1";
 
-// IPL team name → short code mapping
-const TEAM_SHORT: Record<string, string> = {
-  "Mumbai Indians": "MI",
-  "Chennai Super Kings": "CSK",
-  "Royal Challengers Bengaluru": "RCB",
-  "Royal Challengers Bangalore": "RCB",
-  "Kolkata Knight Riders": "KKR",
-  "Delhi Capitals": "DC",
-  "Sunrisers Hyderabad": "SRH",
-  "Rajasthan Royals": "RR",
-  "Punjab Kings": "PBKS",
-  "Lucknow Super Giants": "LSG",
-  "Gujarat Titans": "GT",
+// IPL team name → local id mapping
+const TEAM_MAP: Record<string, { id: string; short: string; emoji: string }> = {
+  "Mumbai Indians":                { id: "mi",   short: "MI",   emoji: "💙" },
+  "Chennai Super Kings":           { id: "csk",  short: "CSK",  emoji: "🦁" },
+  "Royal Challengers Bengaluru":   { id: "rcb",  short: "RCB",  emoji: "🔴" },
+  "Royal Challengers Bangalore":   { id: "rcb",  short: "RCB",  emoji: "🔴" },
+  "Kolkata Knight Riders":         { id: "kkr",  short: "KKR",  emoji: "💜" },
+  "Delhi Capitals":                { id: "dc",   short: "DC",   emoji: "🔵" },
+  "Sunrisers Hyderabad":           { id: "srh",  short: "SRH",  emoji: "🔶" },
+  "Rajasthan Royals":              { id: "rr",   short: "RR",   emoji: "💗" },
+  "Punjab Kings":                  { id: "pbks", short: "PBKS", emoji: "🔴" },
+  "Lucknow Super Giants":         { id: "lsg",  short: "LSG",  emoji: "🩵" },
+  "Gujarat Titans":                { id: "gt",   short: "GT",   emoji: "🩵" },
 };
 
-const TEAM_ID: Record<string, string> = {
-  MI: "mi", CSK: "csk", RCB: "rcb", KKR: "kkr", DC: "dc",
-  SRH: "srh", RR: "rr", PBKS: "pbks", LSG: "lsg", GT: "gt",
-};
-
-const TEAM_EMOJI: Record<string, string> = {
-  mi: "💙", csk: "🦁", rcb: "🔴", kkr: "💜", dc: "🔵",
-  srh: "🔶", rr: "💗", pbks: "🔴", lsg: "🩵", gt: "🩵",
-};
-
-function getShort(name: string): string {
-  for (const [full, short] of Object.entries(TEAM_SHORT)) {
-    if (name.toLowerCase().includes(full.toLowerCase())) return short;
+function lookupTeam(name: string) {
+  // Direct match
+  if (TEAM_MAP[name]) return TEAM_MAP[name];
+  // Fuzzy match
+  const lower = name.toLowerCase();
+  for (const [full, info] of Object.entries(TEAM_MAP)) {
+    if (lower.includes(full.toLowerCase().split(" ")[0]) && full.split(" ").length > 1) {
+      const lastWord = full.toLowerCase().split(" ").pop()!;
+      if (lower.includes(lastWord)) return info;
+    }
   }
-  // Try partial match
-  for (const [full, short] of Object.entries(TEAM_SHORT)) {
-    const words = full.toLowerCase().split(" ");
-    if (words.some((w) => name.toLowerCase().includes(w) && w.length > 3))
-      return short;
-  }
-  return name.slice(0, 3).toUpperCase();
+  return { id: name.slice(0, 3).toLowerCase(), short: name.slice(0, 3).toUpperCase(), emoji: "🏏" };
+}
+
+function mapStatus(apiStatus: string, matchStarted: boolean, matchEnded: boolean): string {
+  if (matchEnded) return "completed";
+  if (matchStarted && !matchEnded) return "live";
+  return "upcoming";
 }
 
 Deno.serve(async (req) => {
@@ -46,94 +43,106 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const apiKey = Deno.env.get("CRICAPI_KEY");
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "CRICAPI_KEY not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
-    // 1. Fetch live matches from CricBuzz (league = IPL)
-    const liveRes = await fetch(`${CRICBUZZ_BASE}/matches/live?type=league`);
-    if (!liveRes.ok) {
-      console.error("CricBuzz live API error:", liveRes.status);
-      return new Response(JSON.stringify({ error: "CricBuzz API error", status: liveRes.status }), {
+    // Fetch current matches (includes live + recent)
+    const res = await fetch(`${CRICAPI_BASE}/currentMatches?apikey=${apiKey}&offset=0`);
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("CricAPI error:", res.status, body);
+      return new Response(JSON.stringify({ error: "CricAPI error", status: res.status, body }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const liveData = await liveRes.json();
-    const matches = liveData?.data || [];
-    console.log(`Found ${matches.length} live/recent matches`);
+    const json = await res.json();
+    if (json.status !== "success") {
+      return new Response(JSON.stringify({ error: json.reason || "API failure" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const matches = json.data || [];
+    // Filter IPL matches only
+    const iplMatches = matches.filter((m: any) =>
+      (m.series_id || "").toLowerCase().includes("ipl") ||
+      (m.name || "").toLowerCase().includes("ipl") ||
+      (m.matchType || "").toLowerCase() === "t20" &&
+        m.teams?.some((t: string) => Object.keys(TEAM_MAP).some(k => t.includes(k.split(" ")[0])))
+    );
+
+    console.log(`Total matches: ${matches.length}, IPL filtered: ${iplMatches.length}`);
 
     let synced = 0;
 
-    for (const match of matches) {
-      const matchId = String(match.id || match.matchId || "");
+    for (const m of iplMatches) {
+      const matchId = m.id || "";
       if (!matchId) continue;
 
-      // 2. Fetch detailed score for each match
-      let scoreData: any = {};
-      try {
-        const scoreRes = await fetch(`${CRICBUZZ_BASE}/score/${matchId}`);
-        if (scoreRes.ok) {
-          scoreData = await scoreRes.json();
-        }
-      } catch (e) {
-        console.warn(`Score fetch failed for ${matchId}:`, e);
-      }
+      const teams: string[] = m.teams || [];
+      const team1Name = teams[0] || m.teamInfo?.[0]?.name || "TBD";
+      const team2Name = teams[1] || m.teamInfo?.[1]?.name || "TBD";
+      const t1 = lookupTeam(team1Name);
+      const t2 = lookupTeam(team2Name);
 
-      // Parse team names
-      const title = match.title || scoreData?.title || "";
-      const teams = title.split(" vs ").map((t: string) => t.trim());
-      const team1Name = teams[0] || "TBD";
-      const team2Name = teams[1] || "TBD";
-      const team1Short = getShort(team1Name);
-      const team2Short = getShort(team2Name);
+      // Status
+      const matchStarted = m.matchStarted === true;
+      const matchEnded = m.matchEnded === true;
+      const status = mapStatus(m.status || "", matchStarted, matchEnded);
 
-      // Determine status
-      const overview = (match.overview || scoreData?.status || "").toLowerCase();
-      let status = "upcoming";
-      if (overview.includes("won") || overview.includes("tied") || overview.includes("no result")) {
-        status = "completed";
-      } else if (overview.includes("need") || overview.includes("trail") || overview.includes("lead") || overview.includes("crr") || match.overview?.includes("*")) {
-        status = "live";
-      }
+      // Scores from score array
+      const scores = m.score || [];
+      const score1 = scores[0] ? `${scores[0].r}/${scores[0].w} (${scores[0].o})` : "";
+      const score2 = scores[1] ? `${scores[1].r}/${scores[1].w} (${scores[1].o})` : "";
+      const currentOvers = scores[0]?.o?.toString() || "";
+      const runRate = scores[0]?.o > 0 ? parseFloat((scores[0].r / scores[0].o).toFixed(2)) : 0;
 
-      // Extract scores
-      const score1 = scoreData?.score1 || scoreData?.batsmanOneRun || "";
-      const score2 = scoreData?.score2 || "";
-      const overs = scoreData?.overs || scoreData?.batsmanOneBall || "";
-      const runRate = parseFloat(scoreData?.crr || scoreData?.currentRunRate || "0") || 0;
-
-      // Toss info from raw data
-      const tossWinner = scoreData?.tossWinner || "";
-      const tossDecision = scoreData?.tossDecision || "";
-
-      // Batting team
-      const battingTeam = scoreData?.battingTeam || "";
+      // Toss
+      const tossWinner = m.tpiossWinner || "";
+      const tossChoice = m.tossChoice || "";
 
       // Result
-      const result = status === "completed" ? (match.overview || scoreData?.status || "") : "";
+      const result = matchEnded ? (m.status || "") : "";
+
+      // Venue & date
+      const venue = m.venue || "";
+      const startTime = m.dateTimeGMT ? new Date(m.dateTimeGMT).toISOString() : null;
 
       const upsertData = {
         match_id: matchId,
         team1: team1Name,
-        team1_short: team1Short,
+        team1_short: t1.short,
+        team1_img: m.teamInfo?.[0]?.img || "",
         team2: team2Name,
-        team2_short: team2Short,
+        team2_short: t2.short,
+        team2_img: m.teamInfo?.[1]?.img || "",
         status,
-        score1: String(score1),
-        score2: String(score2),
-        overs: String(overs),
+        score1,
+        score2,
+        overs: currentOvers,
         run_rate: runRate,
         toss_winner: tossWinner,
-        toss_decision: tossDecision,
-        venue: match.venue || scoreData?.venue || "",
-        match_type: "T20",
-        batting_team: battingTeam,
+        toss_decision: tossChoice,
+        venue,
+        match_type: m.matchType || "t20",
+        start_time: startTime,
+        batting_team: "",
         result,
         last_synced_at: new Date().toISOString(),
-        raw_data: { match, score: scoreData },
+        raw_data: m,
       };
 
       const { error } = await supabase
@@ -147,52 +156,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Also fetch recent completed matches
-    try {
-      const recentRes = await fetch(`${CRICBUZZ_BASE}/matches/recent?type=league`);
-      if (recentRes.ok) {
-        const recentData = await recentRes.json();
-        const recentMatches = recentData?.data || [];
-        
-        for (const match of recentMatches) {
-          const matchId = String(match.id || match.matchId || "");
-          if (!matchId) continue;
-
-          let scoreData: any = {};
-          try {
-            const scoreRes = await fetch(`${CRICBUZZ_BASE}/score/${matchId}`);
-            if (scoreRes.ok) scoreData = await scoreRes.json();
-          } catch (_) { /* skip */ }
-
-          const title = match.title || scoreData?.title || "";
-          const teams = title.split(" vs ").map((t: string) => t.trim());
-          const team1Name = teams[0] || "TBD";
-          const team2Name = teams[1] || "TBD";
-
-          const { error } = await supabase.from("matches").upsert({
-            match_id: matchId,
-            team1: team1Name,
-            team1_short: getShort(team1Name),
-            team2: team2Name,
-            team2_short: getShort(team2Name),
-            status: "completed",
-            score1: String(scoreData?.score1 || ""),
-            score2: String(scoreData?.score2 || ""),
-            result: match.overview || scoreData?.status || "",
-            venue: match.venue || "",
-            match_type: "T20",
-            last_synced_at: new Date().toISOString(),
-            raw_data: { match, score: scoreData },
-          }, { onConflict: "match_id" });
-
-          if (!error) synced++;
-        }
-      }
-    } catch (e) {
-      console.warn("Recent matches fetch failed:", e);
-    }
-
-    return new Response(JSON.stringify({ ok: true, synced }), {
+    return new Response(JSON.stringify({ ok: true, total: matches.length, ipl: iplMatches.length, synced }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
