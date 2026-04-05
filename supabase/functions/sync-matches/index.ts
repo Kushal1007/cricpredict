@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.49.8";
 import { corsHeaders } from "npm:@supabase/supabase-js@2.49.8/cors";
 
 const SPORTS_DB_BASE = "https://www.thesportsdb.com/api/v1/json/3";
