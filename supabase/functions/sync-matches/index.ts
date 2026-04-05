@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
+import { corsHeaders } from "npm:@supabase/supabase-js@2.49.8/cors";
 
 const SPORTS_DB_BASE = "https://www.thesportsdb.com/api/v1/json/3";
 const IPL_LEAGUE_ID = "4460";
