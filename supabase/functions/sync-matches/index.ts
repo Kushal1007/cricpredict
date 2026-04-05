@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 
-const CRICAPI_BASE = "https://api.cricapi.com/v1";
+const SPORTS_DB_BASE = "https://www.thesportsdb.com/api/v1/json/3";
+const IPL_LEAGUE_ID = "4460";
 
 // IPL team name → local id mapping
 const TEAM_MAP: Record<string, { id: string; short: string; emoji: string }> = {
@@ -32,10 +33,62 @@ function lookupTeam(name: string) {
   return { id: name.slice(0, 3).toLowerCase(), short: name.slice(0, 3).toUpperCase(), emoji: "🏏" };
 }
 
-function mapStatus(apiStatus: string, matchStarted: boolean, matchEnded: boolean): string {
-  if (matchEnded) return "completed";
-  if (matchStarted && !matchEnded) return "live";
-  return "upcoming";
+function mapStatus(apiStatus: string, homeScore?: string | null, awayScore?: string | null): string {
+  const status = apiStatus.toLowerCase();
+
+  if (status.includes("finished") || status.includes("ended") || status.includes("complete")) {
+    return "completed";
+  }
+
+  if (
+    status.includes("not started") ||
+    status.includes("scheduled") ||
+    status.includes("postponed") ||
+    status.includes("cancelled")
+  ) {
+    return "upcoming";
+  }
+
+  if (homeScore || awayScore) {
+    return "completed";
+  }
+
+  return "live";
+}
+
+function toIsoStartTime(event: Record<string, any>): string | null {
+  if (event.strTimestamp) {
+    const parsed = new Date(event.strTimestamp);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+
+  if (event.dateEvent && event.strTime) {
+    const parsed = new Date(`${event.dateEvent}T${event.strTime}Z`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+
+  if (event.dateEvent) {
+    const parsed = new Date(`${event.dateEvent}T00:00:00Z`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+
+  return null;
+}
+
+function buildResult(event: Record<string, any>, status: string): string {
+  if (event.strResult) return event.strResult;
+  if (status !== "completed") return "";
+
+  const homeScore = Number(event.intHomeScore);
+  const awayScore = Number(event.intAwayScore);
+
+  if (!Number.isNaN(homeScore) && !Number.isNaN(awayScore)) {
+    if (homeScore > awayScore) return `${event.strHomeTeam} won`;
+    if (awayScore > homeScore) return `${event.strAwayTeam} won`;
+    return "Match tied";
+  }
+
+  return event.strStatus || "";
 }
 
 Deno.serve(async (req) => {
@@ -43,101 +96,72 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const apiKey = Deno.env.get("CRICAPI_KEY");
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: "CRICAPI_KEY not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
   try {
-    // Fetch current matches (includes live + recent)
-    const res = await fetch(`${CRICAPI_BASE}/currentMatches?apikey=${apiKey}&offset=0`);
+    const season = new Date().getUTCFullYear().toString();
+    const res = await fetch(`${SPORTS_DB_BASE}/eventsseason.php?id=${IPL_LEAGUE_ID}&s=${season}`);
     if (!res.ok) {
       const body = await res.text();
-      console.error("CricAPI error:", res.status, body);
-      return new Response(JSON.stringify({ error: "CricAPI error", status: res.status, body }), {
+      console.error("Sports DB error:", res.status, body);
+      return new Response(JSON.stringify({ error: "Sports DB error", status: res.status, body }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const json = await res.json();
-    if (json.status !== "success") {
+    const matches = (json.events || []).filter((event: any) =>
+      event?.strSport === "Cricket" &&
+      (event?.strLeague || "").toLowerCase().includes("indian premier league")
+    );
+
+    if (matches.length === 0) {
       return new Response(JSON.stringify({ error: json.reason || "API failure" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const matches = json.data || [];
-    // Filter IPL matches only
-    const iplMatches = matches.filter((m: any) =>
-      (m.series_id || "").toLowerCase().includes("ipl") ||
-      (m.name || "").toLowerCase().includes("ipl") ||
-      (m.matchType || "").toLowerCase() === "t20" &&
-        m.teams?.some((t: string) => Object.keys(TEAM_MAP).some(k => t.includes(k.split(" ")[0])))
-    );
-
-    console.log(`Total matches: ${matches.length}, IPL filtered: ${iplMatches.length}`);
+    console.log(`IPL events fetched from TheSportsDB: ${matches.length}`);
 
     let synced = 0;
 
-    for (const m of iplMatches) {
-      const matchId = m.id || "";
+    for (const m of matches) {
+      const matchId = m.idEvent || "";
       if (!matchId) continue;
 
-      const teams: string[] = m.teams || [];
-      const team1Name = teams[0] || m.teamInfo?.[0]?.name || "TBD";
-      const team2Name = teams[1] || m.teamInfo?.[1]?.name || "TBD";
+      const team1Name = m.strHomeTeam || "TBD";
+      const team2Name = m.strAwayTeam || "TBD";
       const t1 = lookupTeam(team1Name);
       const t2 = lookupTeam(team2Name);
 
-      // Status
-      const matchStarted = m.matchStarted === true;
-      const matchEnded = m.matchEnded === true;
-      const status = mapStatus(m.status || "", matchStarted, matchEnded);
-
-      // Scores from score array
-      const scores = m.score || [];
-      const score1 = scores[0] ? `${scores[0].r}/${scores[0].w} (${scores[0].o})` : "";
-      const score2 = scores[1] ? `${scores[1].r}/${scores[1].w} (${scores[1].o})` : "";
-      const currentOvers = scores[0]?.o?.toString() || "";
-      const runRate = scores[0]?.o > 0 ? parseFloat((scores[0].r / scores[0].o).toFixed(2)) : 0;
-
-      // Toss
-      const tossWinner = m.tpiossWinner || "";
-      const tossChoice = m.tossChoice || "";
-
-      // Result
-      const result = matchEnded ? (m.status || "") : "";
-
-      // Venue & date
-      const venue = m.venue || "";
-      const startTime = m.dateTimeGMT ? new Date(m.dateTimeGMT).toISOString() : null;
+      const status = mapStatus(m.strStatus || "", m.intHomeScore, m.intAwayScore);
+      const score1 = m.intHomeScore ? String(m.intHomeScore) : "";
+      const score2 = m.intAwayScore ? String(m.intAwayScore) : "";
+      const venue = m.strVenue || m.strCity || "";
+      const startTime = toIsoStartTime(m);
+      const result = buildResult(m, status);
 
       const upsertData = {
         match_id: matchId,
         team1: team1Name,
         team1_short: t1.short,
-        team1_img: m.teamInfo?.[0]?.img || "",
+        team1_img: m.strHomeTeamBadge || "",
         team2: team2Name,
         team2_short: t2.short,
-        team2_img: m.teamInfo?.[1]?.img || "",
+        team2_img: m.strAwayTeamBadge || "",
         status,
         score1,
         score2,
-        overs: currentOvers,
-        run_rate: runRate,
-        toss_winner: tossWinner,
-        toss_decision: tossChoice,
+        overs: "",
+        run_rate: 0,
+        toss_winner: "",
+        toss_decision: "",
         venue,
-        match_type: m.matchType || "t20",
+        match_type: "t20",
         start_time: startTime,
         batting_team: "",
         result,
@@ -156,7 +180,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, total: matches.length, ipl: iplMatches.length, synced }), {
+    return new Response(JSON.stringify({ ok: true, total: matches.length, synced, source: "TheSportsDB", season }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
