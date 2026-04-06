@@ -1,5 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.8";
-import { corsHeaders } from "npm:@supabase/supabase-js@2.49.8/cors";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const SPORTS_DB_BASE = "https://www.thesportsdb.com/api/v1/json/3";
 const IPL_LEAGUE_ID = "4460";
