@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DailyBonus from '@/components/DailyBonus';
+import { useLiveMatches } from '@/hooks/useLiveMatches';
+import { mapLiveMatchesForDisplay } from '@/lib/liveMatchUtils';
 
 const isAnnounced = (m: IPLScheduleEntry): m is IPLMatch => !('tba' in m && m.tba);
 
@@ -18,11 +20,21 @@ const getPredictStatus = (dateStr: string, timeStr: string, status: string) => {
   if (status === 'live') return { open: true, isLive: true, hoursUntil: 0, daysUntil: 0 };
   if (status === 'completed') return { open: false, isLive: false, hoursUntil: -1, daysUntil: -1 };
 
-  // Parse match datetime (assume IST = UTC+5:30)
-  // dateStr: "2026-03-28", timeStr: "19:30"
   const [year, month, day] = dateStr.split('-').map(Number);
-  const [hour, minute] = timeStr.replace(' IST', '').split(':').map(Number);
-  // Build as local date and adjust for IST offset
+  const normalizedTime = timeStr.replace(' IST', '').trim();
+  let hour = 0;
+  let minute = 0;
+
+  if (/am|pm/i.test(normalizedTime)) {
+    const [clock, meridiem = 'AM'] = normalizedTime.split(' ');
+    const [rawHour, rawMinute] = clock.split(':').map(Number);
+    hour = rawHour % 12;
+    if (/pm/i.test(meridiem)) hour += 12;
+    minute = rawMinute || 0;
+  } else {
+    [hour, minute] = normalizedTime.split(':').map(Number);
+  }
+
   const matchDate = new Date(Date.UTC(year, month - 1, day, hour - 5, minute - 30));
   const now = Date.now();
   const msUntil = matchDate.getTime() - now;
@@ -450,9 +462,12 @@ const MatchCard: React.FC<{
   venue: string;
   city: string;
   status: string;
+  score1?: string;
+  score2?: string;
+  result?: string;
   favTeamId: string | null;
   onPredict: () => void;
-}> = ({ matchNumber, team1Id, team2Id, date, time, venue, city, status, favTeamId, onPredict }) => {
+}> = ({ matchNumber, team1Id, team2Id, date, time, venue, city, status, score1, score2, result, favTeamId, onPredict }) => {
   const t1 = getTeam(team1Id);
   const t2 = getTeam(team2Id);
   const playoff = isPlayoff(matchNumber);
@@ -462,6 +477,7 @@ const MatchCard: React.FC<{
 
   const ps = getPredictStatus(date, time, status);
   const isLive = ps.isLive;
+  const isCompleted = status === 'completed';
   const predictOpen = ps.open;
 
   // Live countdown for the 24h window
@@ -511,11 +527,13 @@ const MatchCard: React.FC<{
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold border ${
-              playoff
+              isCompleted
+                ? 'bg-primary/10 border-primary/20 text-primary'
+                : playoff
                 ? 'bg-yellow-400/10 border-yellow-400/30 text-yellow-400'
                 : 'bg-muted/60 border-border/50 text-muted-foreground'
             }`}>
-              {playoff ? playoffLabel(matchNumber) : `Match ${matchNumber}`}
+              {isCompleted ? '✅ Completed' : playoff ? playoffLabel(matchNumber) : `Match ${matchNumber}`}
             </span>
             {hasFav && (
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-primary font-bold flex items-center gap-1">
@@ -530,7 +548,7 @@ const MatchCard: React.FC<{
           </div>
           <div className="text-right">
             <div className="text-[11px] font-semibold text-foreground">{formatDate(date)}</div>
-            <div className="text-[11px] text-muted-foreground">{time} IST</div>
+            <div className="text-[11px] text-muted-foreground">{time}</div>
           </div>
         </div>
 
@@ -542,6 +560,7 @@ const MatchCard: React.FC<{
             </div>
             <div className="min-w-0">
               <div className="font-rajdhani font-black text-base leading-tight">{t1.shortName}</div>
+              {score1 && <div className="text-[11px] font-semibold text-primary mt-0.5">{score1}</div>}
               <div className="text-[10px] text-muted-foreground hidden sm:block truncate">{t1.name}</div>
             </div>
           </div>
@@ -551,6 +570,7 @@ const MatchCard: React.FC<{
           <div className="flex-1 flex items-center gap-2.5 justify-end">
             <div className="min-w-0 text-right">
               <div className="font-rajdhani font-black text-base leading-tight">{t2.shortName}</div>
+              {score2 && <div className="text-[11px] font-semibold text-primary mt-0.5">{score2}</div>}
               <div className="text-[10px] text-muted-foreground hidden sm:block truncate">{t2.name}</div>
             </div>
             <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-gradient-to-br ${tc2.from} ${tc2.to} shadow-md`}>
@@ -574,6 +594,10 @@ const MatchCard: React.FC<{
             >
               🔴 Predict Live
             </button>
+          ) : isCompleted ? (
+            <span className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary">
+              ✅ Result
+            </span>
           ) : predictOpen ? (
             <button
               onClick={handlePredictClick}
@@ -597,6 +621,12 @@ const MatchCard: React.FC<{
             </div>
           )}
         </div>
+
+        {isCompleted && result && (
+          <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
+            {result}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -676,6 +706,7 @@ const SeasonStats: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const { user, setCurrentPage, setSelectedMatchId, updateFavTeam } = useApp();
+  const { matches: liveMatches } = useLiveMatches();
 
   // Derive fav from user profile (Supabase) or localStorage fallback
   const [favTeamId, setFavTeamId] = useState<string | null>(
@@ -730,9 +761,11 @@ const Dashboard: React.FC = () => {
     handleSetFav(next);
   };
 
-  const filteredSchedule = IPL_SCHEDULE.filter(m => {
+  const syncedSchedule = mapLiveMatchesForDisplay(liveMatches);
+
+  const filteredSchedule = syncedSchedule.filter(m => {
     const teamMatch = activeTab === 'fav' && favTeamId
-      ? (isAnnounced(m) && (m.team1Id === favTeamId || m.team2Id === favTeamId))
+      ? (m.team1Id === favTeamId || m.team2Id === favTeamId)
       : true;
     const typeMatch = scheduleFilter === 'group' ? m.matchNumber <= 70 : scheduleFilter === 'playoffs' ? m.matchNumber > 70 : true;
     return teamMatch && typeMatch;
@@ -1039,36 +1072,24 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3 max-h-[75vh] lg:max-h-none overflow-y-auto no-scrollbar lg:overflow-visible">
-                {filteredSchedule.map(m => {
-                  if (!isAnnounced(m)) {
-                    return (
-                      <div key={m.id} className="rounded-2xl border border-dashed border-border/40 bg-muted/20 p-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
-                          <Calendar className="w-4 h-4 text-muted-foreground/50" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-muted-foreground/70">Match {m.matchNumber}</div>
-                          <div className="text-[11px] text-muted-foreground/50 mt-0.5">📅 Yet to be Announced — check back soon</div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return (
-                    <MatchCard
-                      key={m.id}
-                      matchNumber={m.matchNumber}
-                      team1Id={m.team1Id}
-                      team2Id={m.team2Id}
-                      date={m.date}
-                      time={m.time}
-                      venue={m.venue}
-                      city={m.city}
-                      status={m.status}
-                      favTeamId={favTeamId}
-                      onPredict={() => { setSelectedMatchId(m.id); setCurrentPage('live-match'); }}
-                    />
-                  );
-                })}
+                {filteredSchedule.map(m => (
+                  <MatchCard
+                    key={m.id}
+                    matchNumber={m.matchNumber}
+                    team1Id={m.team1Id}
+                    team2Id={m.team2Id}
+                    date={m.date}
+                    time={m.time}
+                    venue={m.venue}
+                    city={m.city}
+                    status={m.status}
+                    score1={m.score1}
+                    score2={m.score2}
+                    result={m.result}
+                    favTeamId={favTeamId}
+                    onPredict={() => { setSelectedMatchId(m.id); setCurrentPage('live-match'); }}
+                  />
+                ))}
               </div>
             )}
           </div>

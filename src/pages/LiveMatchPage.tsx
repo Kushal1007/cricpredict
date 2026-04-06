@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { MOCK_MATCHES } from '@/data/mockData';
-import { IPL_SCHEDULE, IPL_TEAMS, IPLMatch } from '@/data/iplData';
 import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info, Calendar, MapPin, Swords } from 'lucide-react';
 import { PredictionPhase, PredictionQuestion, PredictionOption } from '@/types/cricket';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLiveMatches } from '@/hooks/useLiveMatches';
+import { mapLiveMatchesForDisplay } from '@/lib/liveMatchUtils';
 
-// ─── Helper: get team from IPL_TEAMS ────────────────────────────────────────
-const getIPLTeam = (id: string) => IPL_TEAMS.find(t => t.id === id);
 const TEAM_COLORS: Record<string, { from: string; to: string }> = {
   mi:   { from: 'from-blue-600',   to: 'to-blue-400'   },
   csk:  { from: 'from-yellow-500', to: 'to-amber-400'  },
@@ -23,10 +21,32 @@ const TEAM_COLORS: Record<string, { from: string; to: string }> = {
 };
 
 // ─── Match Picker ────────────────────────────────────────────────────────────
-const MatchPicker: React.FC<{ onPick: (matchId: string) => void; onBack: () => void }> = ({ onPick, onBack }) => {
-  const announcedMatches = IPL_SCHEDULE.filter(
-    (m): m is IPLMatch => !('tba' in m && m.tba)
-  );
+const MatchPicker: React.FC<{
+  loading: boolean;
+  matches: ReturnType<typeof mapLiveMatchesForDisplay>;
+  onPick: (matchId: string) => void;
+  onBack: () => void;
+}> = ({ loading, matches, onPick, onBack }) => {
+  const announcedMatches = matches;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pt-14 md:pt-16 pb-12">
+        <div className="container mx-auto px-3 sm:px-4 max-w-3xl py-5">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors mb-5"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Back to Dashboard</span>
+          </button>
+          <div className="rounded-2xl border border-border/60 bg-card/70 p-8 text-center text-muted-foreground text-sm">
+            Loading live matches…
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pt-14 md:pt-16 pb-12">
@@ -47,11 +67,14 @@ const MatchPicker: React.FC<{ onPick: (matchId: string) => void; onBack: () => v
         </div>
 
         <div className="space-y-3">
+          {announcedMatches.length === 0 && (
+            <div className="rounded-2xl border border-border/60 bg-card/70 p-8 text-center text-muted-foreground text-sm">
+              No synced matches available yet.
+            </div>
+          )}
           {announcedMatches.map(m => {
-            const t1 = getIPLTeam(m.team1Id);
-            const t2 = getIPLTeam(m.team2Id);
-            const tc1 = TEAM_COLORS[m.team1Id];
-            const tc2 = TEAM_COLORS[m.team2Id];
+            const tc1 = TEAM_COLORS[m.team1Id] ?? TEAM_COLORS.mi;
+            const tc2 = TEAM_COLORS[m.team2Id] ?? TEAM_COLORS.mi;
             const isLive = m.status === 'live';
             const isCompleted = m.status === 'completed';
 
@@ -87,29 +110,35 @@ const MatchPicker: React.FC<{ onPick: (matchId: string) => void; onBack: () => v
                       <div className="text-[11px] font-semibold">
                         {new Date(m.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
                       </div>
-                      <div className="text-[11px] text-muted-foreground">{m.time} IST</div>
+                      <div className="text-[11px] text-muted-foreground">{m.time}</div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-1 flex items-center gap-2.5">
                       <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-gradient-to-br ${tc1.from} ${tc1.to} shadow-md`}>
-                        {t1?.emoji}
+                        {m.team1Emoji}
                       </div>
-                      <div className="font-rajdhani font-black text-base">{t1?.shortName}</div>
+                      <div>
+                        <div className="font-rajdhani font-black text-base">{m.team1Short}</div>
+                        {m.score1 && <div className="text-[11px] font-semibold text-primary">{m.score1}</div>}
+                      </div>
                     </div>
                     <div className="shrink-0 w-8 h-8 rounded-full bg-muted/60 border border-border/50 flex items-center justify-center">
                       <Swords className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 flex items-center gap-2.5 justify-end">
-                      <div className="font-rajdhani font-black text-base">{t2?.shortName}</div>
+                      <div className="text-right">
+                        <div className="font-rajdhani font-black text-base">{m.team2Short}</div>
+                        {m.score2 && <div className="text-[11px] font-semibold text-primary">{m.score2}</div>}
+                      </div>
                       <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl bg-gradient-to-br ${tc2.from} ${tc2.to} shadow-md`}>
-                        {t2?.emoji}
+                        {m.team2Emoji}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                       <MapPin className="w-3 h-3 shrink-0" />
                       <span className="truncate">{m.venue}, {m.city}</span>
@@ -124,6 +153,12 @@ const MatchPicker: React.FC<{ onPick: (matchId: string) => void; onBack: () => v
                       </span>
                     )}
                   </div>
+
+                  {isCompleted && m.result && (
+                    <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">
+                      {m.result}
+                    </div>
+                  )}
                 </div>
               </button>
             );
@@ -490,6 +525,7 @@ const PHASES: { key: PredictionPhase; questions: PredictionQuestion[] }[] = [
 const LiveMatchPage: React.FC = () => {
   const { selectedMatchId, setCurrentPage, setSelectedMatchId, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
   const { toast } = useToast();
+  const { matches: liveMatches, loading } = useLiveMatches();
 
   // All hooks must be at top level — before any early returns
   const [pickedMatchId, setPickedMatchId] = useState<string | null>(selectedMatchId);
@@ -497,6 +533,7 @@ const LiveMatchPage: React.FC = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [streak, setStreak] = useState(user?.streak || 0);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const displayMatches = mapLiveMatchesForDisplay(liveMatches);
 
   const handlePickMatch = (id: string) => {
     setPickedMatchId(id);
@@ -508,12 +545,26 @@ const LiveMatchPage: React.FC = () => {
     setSelectedMatchId(null);
   };
 
+  useEffect(() => {
+    if (pickedMatchId && !displayMatches.some((match) => match.id === pickedMatchId)) {
+      setPickedMatchId(null);
+      setSelectedMatchId(null);
+    }
+  }, [displayMatches, pickedMatchId, setSelectedMatchId]);
+
   // Show picker if no match chosen
   if (!pickedMatchId) {
-    return <MatchPicker onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
   }
 
-  const match = MOCK_MATCHES.find(m => m.id === pickedMatchId) || MOCK_MATCHES[0];
+  const match = displayMatches.find((item) => item.id === pickedMatchId);
+
+  if (!match) {
+    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+  }
+
+  const isLive = match.status === 'live';
+  const isCompleted = match.status === 'completed';
 
   const handleAnswer = async (qId: string, optId: string, cost: number) => {
     if (!user || user.coins < cost) {
@@ -606,8 +657,10 @@ const LiveMatchPage: React.FC = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="live-pulse w-2 h-2 bg-red-400 rounded-full" />
-            <span className="font-rajdhani font-bold text-sm text-red-400">LIVE</span>
+            <span className={`w-2 h-2 rounded-full ${isLive ? 'live-pulse bg-red-400' : isCompleted ? 'bg-primary' : 'bg-secondary'}`} />
+            <span className={`font-rajdhani font-bold text-sm ${isLive ? 'text-red-400' : isCompleted ? 'text-primary' : 'text-secondary'}`}>
+              {isLive ? 'LIVE' : isCompleted ? 'COMPLETED' : 'UPCOMING'}
+            </span>
             <span className="text-muted-foreground text-xs hidden sm:inline">{match.matchType}</span>
           </div>
 
@@ -633,7 +686,7 @@ const LiveMatchPage: React.FC = () => {
         <div className="card-surface rounded-2xl p-4 glow-border-green">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <div className="text-2xl sm:text-3xl">{match.team1Flag}</div>
+              <div className="text-2xl sm:text-3xl">{match.team1Emoji}</div>
               <div className="font-rajdhani font-bold text-lg sm:text-xl mt-1">{match.team1Short}</div>
               {match.score1 && (
                 <div className="font-rajdhani text-neon-green font-bold text-sm">{match.score1}</div>
@@ -642,8 +695,14 @@ const LiveMatchPage: React.FC = () => {
 
             <div className="flex flex-col items-center px-4 gap-1">
               <div className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">vs</div>
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1 rounded-full">
-                LIVE
+              <div className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                isLive
+                  ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                  : isCompleted
+                  ? 'bg-primary/10 border-primary/20 text-primary'
+                  : 'bg-secondary/10 border-secondary/20 text-secondary'
+              }`}>
+                {isLive ? 'LIVE' : isCompleted ? 'COMPLETED' : 'UPCOMING'}
               </div>
               {match.overs && (
                 <div className="text-xs text-muted-foreground">{match.overs} ov</div>
@@ -651,7 +710,7 @@ const LiveMatchPage: React.FC = () => {
             </div>
 
             <div className="text-center flex-1">
-              <div className="text-2xl sm:text-3xl">{match.team2Flag}</div>
+              <div className="text-2xl sm:text-3xl">{match.team2Emoji}</div>
               <div className="font-rajdhani font-bold text-lg sm:text-xl mt-1">{match.team2Short}</div>
               {match.score2 && (
                 <div className="font-rajdhani text-neon-green font-bold text-sm">{match.score2}</div>
@@ -662,6 +721,11 @@ const LiveMatchPage: React.FC = () => {
             <span>📍 {match.venue}</span>
             {match.runRate && <span>RR: <span className="text-neon-orange font-semibold">{match.runRate}</span></span>}
           </div>
+          {match.result && (
+            <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-center text-xs font-semibold text-primary">
+              {match.result}
+            </div>
+          )}
         </div>
 
         {/* Streak banner */}
