@@ -543,7 +543,7 @@ const PHASES: { key: PredictionPhase; questions: PredictionQuestion[] }[] = [
 const LiveMatchPage: React.FC = () => {
   const { selectedMatchId, setCurrentPage, setSelectedMatchId, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
   const { toast } = useToast();
-  const { matches: liveMatches, loading } = useLiveMatches();
+  const { matches: liveMatches, loading, triggerSync } = useLiveMatches();
 
   // All hooks must be at top level — before any early returns
   const [pickedMatchId, setPickedMatchId] = useState<string | null>(selectedMatchId);
