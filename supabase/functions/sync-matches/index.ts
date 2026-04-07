@@ -80,19 +80,22 @@ function toIsoStartTime(event: Record<string, any>): string | null {
 }
 
 function buildResult(event: Record<string, any>, status: string): string {
-  if (event.strResult) return event.strResult;
+  if (event.strResult && event.strResult.trim()) return event.strResult;
   if (status !== "completed") return "";
 
   const homeScore = Number(event.intHomeScore);
   const awayScore = Number(event.intAwayScore);
 
-  if (!Number.isNaN(homeScore) && !Number.isNaN(awayScore)) {
-    if (homeScore > awayScore) return `${event.strHomeTeam} won`;
+  if (!Number.isNaN(homeScore) && !Number.isNaN(awayScore) && (homeScore > 0 || awayScore > 0)) {
+    if (homeScore > awayScore) return `${event.strHomeTeam} won by ${homeScore - awayScore} runs`;
     if (awayScore > homeScore) return `${event.strAwayTeam} won`;
     return "Match tied";
   }
 
-  return event.strStatus || "";
+  const statusText = (event.strStatus || "").toLowerCase();
+  if (statusText.includes("no result") || statusText.includes("abandoned")) return "No result";
+
+  return event.strStatus || "Result pending";
 }
 
 Deno.serve(async (req) => {
