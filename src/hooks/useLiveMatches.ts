@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface LiveMatch {
@@ -6,8 +6,10 @@ export interface LiveMatch {
   match_id: string;
   team1: string;
   team1_short: string;
+  team1_img: string | null;
   team2: string;
   team2_short: string;
+  team2_img: string | null;
   status: string;
   score1: string;
   score2: string;
@@ -24,21 +26,49 @@ export interface LiveMatch {
   raw_data: any;
 }
 
+// Only allow one sync call across all hook instances within this window
+let lastSyncTime = 0;
+const SYNC_COOLDOWN_MS = 120_000; // 2 minutes
+
 export function useLiveMatches() {
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasSynced = useRef(false);
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     const { data, error } = await supabase
       .from('matches')
       .select('*')
-      .order('last_synced_at', { ascending: false });
+      .order('start_time', { ascending: true });
     if (!error && data) setMatches(data as LiveMatch[]);
     setLoading(false);
-  };
+  }, []);
+
+  const triggerSync = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastSyncTime < SYNC_COOLDOWN_MS) return;
+    lastSyncTime = now;
+
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      await fetch(`https://${projectId}.supabase.co/functions/v1/sync-matches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      await fetchMatches();
+    } catch (e) {
+      console.error('Sync trigger failed:', e);
+    }
+  }, [fetchMatches]);
 
   useEffect(() => {
-    fetchMatches();
+    // Fetch from DB first (instant), then trigger a background sync
+    fetchMatches().then(() => {
+      if (!hasSynced.current) {
+        hasSynced.current = true;
+        triggerSync();
+      }
+    });
 
     // Subscribe to realtime changes
     const channel = supabase
@@ -55,21 +85,7 @@ export function useLiveMatches() {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, []);
-
-  // Manual trigger sync
-  const triggerSync = async () => {
-    try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      await fetch(`https://${projectId}.supabase.co/functions/v1/sync-matches`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      await fetchMatches();
-    } catch (e) {
-      console.error('Sync trigger failed:', e);
-    }
-  };
+  }, [fetchMatches, triggerSync]);
 
   return { matches, loading, triggerSync, refetch: fetchMatches };
 }
