@@ -572,13 +572,13 @@ const LiveMatchPage: React.FC = () => {
 
   // Show picker if no match chosen
   if (!pickedMatchId) {
-    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} onRefresh={triggerSync} />;
   }
 
   const match = displayMatches.find((item) => item.id === pickedMatchId);
 
   if (!match) {
-    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} onRefresh={triggerSync} />;
   }
 
   const isLive = match.status === 'live';
