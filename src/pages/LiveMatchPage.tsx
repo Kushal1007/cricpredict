@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info, Calendar, MapPin, Swords } from 'lucide-react';
+import { ArrowLeft, Coins, Clock, Zap, ChevronRight, Trophy, Info, Calendar, MapPin, Swords, RefreshCw } from 'lucide-react';
 import { PredictionPhase, PredictionQuestion, PredictionOption } from '@/types/cricket';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +26,15 @@ const MatchPicker: React.FC<{
   matches: ReturnType<typeof mapLiveMatchesForDisplay>;
   onPick: (matchId: string) => void;
   onBack: () => void;
-}> = ({ loading, matches, onPick, onBack }) => {
+  onRefresh: () => Promise<void>;
+}> = ({ loading, matches, onPick, onBack, onRefresh }) => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await onRefresh();
+    setTimeout(() => setRefreshing(false), 1500);
+  };
   const announcedMatches = matches;
 
   if (loading) {
@@ -59,11 +67,21 @@ const MatchPicker: React.FC<{
           <span className="text-sm">Back to Dashboard</span>
         </button>
 
-        <div className="mb-6">
-          <h1 className="font-rajdhani text-3xl font-black mb-1">
-            🏏 <span className="neon-text-green">Live Matches</span>
-          </h1>
-          <p className="text-muted-foreground text-sm">Select a match to make your predictions</p>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-rajdhani text-3xl font-black mb-1">
+              🏏 <span className="neon-text-green">Live Matches</span>
+            </h1>
+            <p className="text-muted-foreground text-sm">Select a match to make your predictions</p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="shrink-0 mt-1 flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Syncing…' : 'Refresh'}
+          </button>
         </div>
 
         <div className="space-y-3">
@@ -525,7 +543,7 @@ const PHASES: { key: PredictionPhase; questions: PredictionQuestion[] }[] = [
 const LiveMatchPage: React.FC = () => {
   const { selectedMatchId, setCurrentPage, setSelectedMatchId, user, updateCoins, updatePoints, updateStreak, triggerCoinAnimation } = useApp();
   const { toast } = useToast();
-  const { matches: liveMatches, loading } = useLiveMatches();
+  const { matches: liveMatches, loading, triggerSync } = useLiveMatches();
 
   // All hooks must be at top level — before any early returns
   const [pickedMatchId, setPickedMatchId] = useState<string | null>(selectedMatchId);
@@ -554,13 +572,13 @@ const LiveMatchPage: React.FC = () => {
 
   // Show picker if no match chosen
   if (!pickedMatchId) {
-    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} onRefresh={triggerSync} />;
   }
 
   const match = displayMatches.find((item) => item.id === pickedMatchId);
 
   if (!match) {
-    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} />;
+    return <MatchPicker loading={loading} matches={displayMatches} onPick={handlePickMatch} onBack={() => setCurrentPage('dashboard')} onRefresh={triggerSync} />;
   }
 
   const isLive = match.status === 'live';
