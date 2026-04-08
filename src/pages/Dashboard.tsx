@@ -709,7 +709,8 @@ const SeasonStats: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const { user, setCurrentPage, setSelectedMatchId, updateFavTeam } = useApp();
-  const { matches: liveMatches } = useLiveMatches();
+  const { matches: liveMatches, triggerSync } = useLiveMatches();
+  const [refreshing, setRefreshing] = useState(false);
 
   // Derive fav from user profile (Supabase) or localStorage fallback
   const [favTeamId, setFavTeamId] = useState<string | null>(
