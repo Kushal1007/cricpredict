@@ -639,12 +639,10 @@ const MatchCard: React.FC<{
 
 const SeasonStats: React.FC = () => {
   const seasonStarted = IPL_PLAYER_STATS.some(p => p.matches > 0);
-  const orangeCap = [...IPL_PLAYER_STATS].sort((a, b) => b.runs - a.runs)[0];
-  const purpleCap = [...IPL_PLAYER_STATS].sort((a, b) => b.wickets - a.wickets)[0];
-  const orangeTeam = IPL_TEAMS.find(t => t.id === orangeCap.teamId);
-  const purpleTeam = IPL_TEAMS.find(t => t.id === purpleCap.teamId);
-  const tc_o = TEAM_COLORS[orangeCap.teamId];
-  const tc_p = TEAM_COLORS[purpleCap.teamId];
+  const topBatters = [...IPL_PLAYER_STATS].sort((a, b) => b.runs - a.runs).filter(p => p.runs > 0).slice(0, 5);
+  const topBowlers = [...IPL_PLAYER_STATS].sort((a, b) => b.wickets - a.wickets).filter(p => p.wickets > 0).slice(0, 5);
+  const orangeCap = topBatters[0];
+  const purpleCap = topBowlers[0];
 
   return (
     <div className="mb-6">
@@ -668,36 +666,69 @@ const SeasonStats: React.FC = () => {
           <p className="text-xs text-muted-foreground">Orange Cap & Purple Cap leaders will appear here once the season begins.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {/* Orange Cap */}
-          <div className="relative overflow-hidden rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-orange-500/5 p-4">
-            <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${tc_o.from} ${tc_o.to}`} />
-            <div className="flex items-center gap-1.5 mb-2">
+        <div className="space-y-3">
+          {/* Orange Cap - Top 5 */}
+          <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-transparent overflow-hidden">
+            <div className="flex items-center gap-2 px-4 pt-3 pb-2">
               <span className="text-lg">🟠</span>
-              <span className="text-[11px] font-black text-orange-400 uppercase tracking-wider">Orange Cap</span>
+              <span className="text-xs font-black text-orange-400 uppercase tracking-wider">Orange Cap — Top Run-Scorers</span>
             </div>
-            <div className="font-rajdhani font-black text-base leading-tight mb-0.5">{orangeCap.name}</div>
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className={`w-5 h-5 rounded flex items-center justify-center text-xs bg-gradient-to-br ${tc_o.from} ${tc_o.to}`}>{orangeTeam?.emoji}</div>
-              <span className="text-[11px] text-muted-foreground">{orangeTeam?.shortName}</span>
+            <div className="px-3 pb-3 space-y-1">
+              {topBatters.map((p, i) => {
+                const team = IPL_TEAMS.find(t => t.id === p.teamId);
+                const tc = TEAM_COLORS[p.teamId];
+                return (
+                  <div key={p.name} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${i === 0 ? 'bg-orange-500/10 border border-orange-500/20' : 'hover:bg-muted/30'}`}>
+                    <span className={`w-5 text-center font-rajdhani font-black text-xs ${i === 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                      {i === 0 ? '👑' : `#${i + 1}`}
+                    </span>
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs bg-gradient-to-br ${tc?.from || ''} ${tc?.to || ''}`}>
+                      {team?.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-bold truncate ${i === 0 ? 'text-orange-400' : ''}`}>{p.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{team?.shortName} · {p.matches}M · SR {p.strikeRate}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`font-rajdhani font-black text-sm ${i === 0 ? 'text-orange-400' : ''}`}>{p.runs}</div>
+                      <div className="text-[10px] text-muted-foreground">runs</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="font-rajdhani font-black text-3xl text-orange-400">{orangeCap.runs}</div>
-            <div className="text-[10px] text-muted-foreground">runs · SR {orangeCap.strikeRate || '-'}</div>
           </div>
-          {/* Purple Cap */}
-          <div className="relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4">
-            <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${tc_p.from} ${tc_p.to}`} />
-            <div className="flex items-center gap-1.5 mb-2">
+
+          {/* Purple Cap - Top 5 */}
+          <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-transparent overflow-hidden">
+            <div className="flex items-center gap-2 px-4 pt-3 pb-2">
               <span className="text-lg">🟣</span>
-              <span className="text-[11px] font-black text-purple-400 uppercase tracking-wider">Purple Cap</span>
+              <span className="text-xs font-black text-purple-400 uppercase tracking-wider">Purple Cap — Top Wicket-Takers</span>
             </div>
-            <div className="font-rajdhani font-black text-base leading-tight mb-0.5">{purpleCap.name}</div>
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className={`w-5 h-5 rounded flex items-center justify-center text-xs bg-gradient-to-br ${tc_p.from} ${tc_p.to}`}>{purpleTeam?.emoji}</div>
-              <span className="text-[11px] text-muted-foreground">{purpleTeam?.shortName}</span>
+            <div className="px-3 pb-3 space-y-1">
+              {topBowlers.map((p, i) => {
+                const team = IPL_TEAMS.find(t => t.id === p.teamId);
+                const tc = TEAM_COLORS[p.teamId];
+                return (
+                  <div key={p.name} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${i === 0 ? 'bg-purple-500/10 border border-purple-500/20' : 'hover:bg-muted/30'}`}>
+                    <span className={`w-5 text-center font-rajdhani font-black text-xs ${i === 0 ? 'text-purple-400' : 'text-muted-foreground'}`}>
+                      {i === 0 ? '👑' : `#${i + 1}`}
+                    </span>
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs bg-gradient-to-br ${tc?.from || ''} ${tc?.to || ''}`}>
+                      {team?.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-bold truncate ${i === 0 ? 'text-purple-400' : ''}`}>{p.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{team?.shortName} · {p.matches}M · Eco {p.economy}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`font-rajdhani font-black text-sm ${i === 0 ? 'text-purple-400' : ''}`}>{p.wickets}</div>
+                      <div className="text-[10px] text-muted-foreground">wkts</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="font-rajdhani font-black text-3xl text-purple-400">{purpleCap.wickets}</div>
-            <div className="text-[10px] text-muted-foreground">wickets · Eco {purpleCap.economy || '-'}</div>
           </div>
         </div>
       )}
