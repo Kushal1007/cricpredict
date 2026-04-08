@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_POINTS_TABLE, IPL_PLAYER_STATS, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
+import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_PLAYER_STATS, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
 import {
   Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp,
-  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone, BarChart2, Clock
+  Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone, BarChart2, Clock, RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import DailyBonus from '@/components/DailyBonus';
 import { useLiveMatches } from '@/hooks/useLiveMatches';
 import { mapLiveMatchesForDisplay } from '@/lib/liveMatchUtils';
+import { computePointsTable } from '@/lib/pointsTableUtils';
 
 const isAnnounced = (m: IPLScheduleEntry): m is IPLMatch => !('tba' in m && m.tba);
 
@@ -97,10 +98,12 @@ const FormBadge: React.FC<{ result: 'W' | 'L' | 'NR' }> = ({ result }) => {
 
 // ─── Points Table ─────────────────────────────────────────────────────────────
 
-const PointsTable: React.FC<{ favTeamId: string | null }> = ({ favTeamId }) => {
+const PointsTable: React.FC<{ favTeamId: string | null; computedPoints?: ReturnType<typeof computePointsTable> }> = ({ favTeamId, computedPoints }) => {
   const [expanded, setExpanded] = useState(false);
-  const rows = IPL_POINTS_TABLE
+  const pointsData = computedPoints || [];
+  const rows = pointsData
     .map(entry => ({ entry, team: IPL_TEAMS.find(t => t.id === entry.teamId)! }))
+    .filter(r => r.team)
     .sort((a, b) => b.entry.pts - a.entry.pts || b.entry.nrr - a.entry.nrr);
 
   const visibleRows = expanded ? rows : rows.slice(0, 5);
@@ -706,7 +709,8 @@ const SeasonStats: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const { user, setCurrentPage, setSelectedMatchId, updateFavTeam } = useApp();
-  const { matches: liveMatches } = useLiveMatches();
+  const { matches: liveMatches, triggerSync } = useLiveMatches();
+  const [refreshing, setRefreshing] = useState(false);
 
   // Derive fav from user profile (Supabase) or localStorage fallback
   const [favTeamId, setFavTeamId] = useState<string | null>(
@@ -762,6 +766,13 @@ const Dashboard: React.FC = () => {
   };
 
   const syncedSchedule = mapLiveMatchesForDisplay(liveMatches);
+  const computedPoints = computePointsTable(syncedSchedule);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await triggerSync();
+    setTimeout(() => setRefreshing(false), 1500);
+  };
 
   const filteredSchedule = syncedSchedule.filter(m => {
     const teamMatch = activeTab === 'fav' && favTeamId
@@ -897,8 +908,19 @@ const Dashboard: React.FC = () => {
           </button>
         )}
 
-        {/* ── Points Table ─────────────────────────────────────── */}
-        <PointsTable favTeamId={favTeamId} />
+        {/* ── Refresh + Points Table ──────────────────────────── */}
+        <div className="flex items-center justify-between mb-3">
+          <div />
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Syncing...' : 'Refresh Data'}
+          </button>
+        </div>
+        <PointsTable favTeamId={favTeamId} computedPoints={computedPoints} />
 
         {/* ── Season Stats: Orange & Purple Cap ────────────────── */}
         <SeasonStats />

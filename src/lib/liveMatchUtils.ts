@@ -1,5 +1,8 @@
-import { IPL_TEAMS } from '@/data/iplData';
+import { IPL_TEAMS, IPL_SCHEDULE } from '@/data/iplData';
 import type { LiveMatch } from '@/hooks/useLiveMatches';
+
+const isAnnounced = (m: any): m is { matchNumber: number; team1Id: string; team2Id: string; date: string } =>
+  !('tba' in m && m.tba);
 
 const normalize = (value?: string | null) => (value ?? '').toLowerCase().replace(/[^a-z]/g, '');
 
@@ -114,6 +117,22 @@ export const mapLiveMatchesForDisplay = (matches: LiveMatch[]): DisplayMatch[] =
     };
   });
 
+  // Assign real IPL match numbers by matching teams + date to the schedule
+  for (const match of mapped) {
+    const matchDate = match.date; // YYYY-MM-DD
+    const schedEntry = IPL_SCHEDULE.find(s => {
+      if (!isAnnounced(s)) return false;
+      return (
+        s.date === matchDate &&
+        ((s.team1Id === match.team1Id && s.team2Id === match.team2Id) ||
+         (s.team1Id === match.team2Id && s.team2Id === match.team1Id))
+      );
+    });
+    if (schedEntry && isAnnounced(schedEntry)) {
+      match.matchNumber = schedEntry.matchNumber;
+    }
+  }
+
   mapped.sort((a, b) => {
     if (a.status !== b.status) return statusOrder[a.status] - statusOrder[b.status];
 
@@ -124,8 +143,5 @@ export const mapLiveMatchesForDisplay = (matches: LiveMatch[]): DisplayMatch[] =
     return aTime - bTime; // nearest upcoming first
   });
 
-  return mapped.map((match, index) => ({
-    ...match,
-    matchNumber: index + 1,
-  }));
+  return mapped;
 };
