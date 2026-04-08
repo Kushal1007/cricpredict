@@ -765,6 +765,13 @@ const Dashboard: React.FC = () => {
   };
 
   const syncedSchedule = mapLiveMatchesForDisplay(liveMatches);
+  const computedPoints = computePointsTable(syncedSchedule);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await triggerSync();
+    setTimeout(() => setRefreshing(false), 1500);
+  };
 
   const filteredSchedule = syncedSchedule.filter(m => {
     const teamMatch = activeTab === 'fav' && favTeamId
