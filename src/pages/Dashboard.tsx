@@ -98,10 +98,12 @@ const FormBadge: React.FC<{ result: 'W' | 'L' | 'NR' }> = ({ result }) => {
 
 // ─── Points Table ─────────────────────────────────────────────────────────────
 
-const PointsTable: React.FC<{ favTeamId: string | null }> = ({ favTeamId }) => {
+const PointsTable: React.FC<{ favTeamId: string | null; computedPoints?: ReturnType<typeof computePointsTable> }> = ({ favTeamId, computedPoints }) => {
   const [expanded, setExpanded] = useState(false);
-  const rows = IPL_POINTS_TABLE
+  const pointsData = computedPoints || [];
+  const rows = pointsData
     .map(entry => ({ entry, team: IPL_TEAMS.find(t => t.id === entry.teamId)! }))
+    .filter(r => r.team)
     .sort((a, b) => b.entry.pts - a.entry.pts || b.entry.nrr - a.entry.nrr);
 
   const visibleRows = expanded ? rows : rows.slice(0, 5);
