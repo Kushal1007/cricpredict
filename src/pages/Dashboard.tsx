@@ -908,8 +908,19 @@ const Dashboard: React.FC = () => {
           </button>
         )}
 
-        {/* ── Points Table ─────────────────────────────────────── */}
-        <PointsTable favTeamId={favTeamId} />
+        {/* ── Refresh + Points Table ──────────────────────────── */}
+        <div className="flex items-center justify-between mb-3">
+          <div />
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Syncing...' : 'Refresh Data'}
+          </button>
+        </div>
+        <PointsTable favTeamId={favTeamId} computedPoints={computedPoints} />
 
         {/* ── Season Stats: Orange & Purple Cap ────────────────── */}
         <SeasonStats />
