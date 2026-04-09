@@ -229,6 +229,81 @@ export type Database = {
         }
         Relationships: []
       }
+      player_season_stats: {
+        Row: {
+          average: number
+          best_figures: string
+          bowling_innings: number
+          created_at: string
+          economy: number
+          fifties: number
+          five_wickets: number
+          fours: number
+          high_score: number
+          hundreds: number
+          id: string
+          innings: number
+          last_updated_at: string
+          matches: number
+          player_name: string
+          role: string
+          runs: number
+          season: number
+          sixes: number
+          strike_rate: number
+          team_id: string
+          wickets: number
+        }
+        Insert: {
+          average?: number
+          best_figures?: string
+          bowling_innings?: number
+          created_at?: string
+          economy?: number
+          fifties?: number
+          five_wickets?: number
+          fours?: number
+          high_score?: number
+          hundreds?: number
+          id?: string
+          innings?: number
+          last_updated_at?: string
+          matches?: number
+          player_name: string
+          role?: string
+          runs?: number
+          season?: number
+          sixes?: number
+          strike_rate?: number
+          team_id: string
+          wickets?: number
+        }
+        Update: {
+          average?: number
+          best_figures?: string
+          bowling_innings?: number
+          created_at?: string
+          economy?: number
+          fifties?: number
+          five_wickets?: number
+          fours?: number
+          high_score?: number
+          hundreds?: number
+          id?: string
+          innings?: number
+          last_updated_at?: string
+          matches?: number
+          player_name?: string
+          role?: string
+          runs?: number
+          season?: number
+          sixes?: number
+          strike_rate?: number
+          team_id?: string
+          wickets?: number
+        }
+        Relationships: []
+      }
       predictions: {
         Row: {
           coins_won: number | null
