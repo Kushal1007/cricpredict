@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '@/context/AppContext';
 import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
 import {
