@@ -1000,7 +1000,7 @@ const Dashboard: React.FC = () => {
         <PointsTable favTeamId={favTeamId} computedPoints={computedPoints} />
 
         {/* ── Season Stats: Orange & Purple Cap ────────────────── */}
-        <SeasonStats />
+        <SeasonStats onRefresh={triggerSync} />
 
 
         <div className="lg:grid lg:grid-cols-5 lg:gap-6">
