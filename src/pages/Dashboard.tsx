@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '@/context/AppContext';
-import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPL_PLAYER_STATS, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
+import { IPL_TEAMS, IPL_SCHEDULE, IPL_INFO, IPLTeam, IPLMatch, IPLMatchTBA, IPLScheduleEntry } from '@/data/iplData';
 import {
   Zap, Trophy, Target, Star, Heart, Calendar, Users, ChevronDown, ChevronUp,
   Shield, X, TrendingUp, MapPin, Check, Swords, ChevronRight, Megaphone, BarChart2, Clock, RefreshCw
@@ -637,12 +637,44 @@ const MatchCard: React.FC<{
 
 // ─── Season Stats (Orange & Purple Cap) ──────────────────────────────────────
 
-const SeasonStats: React.FC = () => {
-  const seasonStarted = IPL_PLAYER_STATS.some(p => p.matches > 0);
-  const topBatters = [...IPL_PLAYER_STATS].sort((a, b) => b.runs - a.runs).filter(p => p.runs > 0).slice(0, 5);
-  const topBowlers = [...IPL_PLAYER_STATS].sort((a, b) => b.wickets - a.wickets).filter(p => p.wickets > 0).slice(0, 5);
-  const orangeCap = topBatters[0];
-  const purpleCap = topBowlers[0];
+interface PlayerStat {
+  player_name: string;
+  team_id: string;
+  role: string;
+  matches: number;
+  runs: number;
+  strike_rate: number;
+  wickets: number;
+  economy: number;
+}
+
+const SeasonStats: React.FC<{ onRefresh?: () => Promise<void> }> = ({ onRefresh }) => {
+  const [stats, setStats] = useState<PlayerStat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchStats = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('player_season_stats')
+      .select('player_name, team_id, role, matches, runs, strike_rate, wickets, economy')
+      .eq('season', 2026)
+      .gt('matches', 0);
+    if (!error && data) setStats(data as PlayerStat[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    if (onRefresh) await onRefresh();
+    await fetchStats();
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const topBatters = [...stats].sort((a, b) => b.runs - a.runs).filter(p => p.runs > 0).slice(0, 5);
+  const topBowlers = [...stats].sort((a, b) => b.wickets - a.wickets).filter(p => p.wickets > 0).slice(0, 5);
+  const seasonStarted = stats.length > 0;
 
   return (
     <div className="mb-6">
@@ -651,12 +683,26 @@ const SeasonStats: React.FC = () => {
           <BarChart2 className="w-5 h-5 text-neon-orange" />
           Season Stats
         </h2>
-        <span className="text-xs bg-muted/50 border border-border/40 text-muted-foreground px-2.5 py-0.5 rounded-full font-semibold">
-          IPL 2026
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-neon-orange/10 border border-neon-orange/20 text-neon-orange hover:bg-neon-orange/20 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Updating...' : 'Refresh'}
+          </button>
+          <span className="text-xs bg-muted/50 border border-border/40 text-muted-foreground px-2.5 py-0.5 rounded-full font-semibold">
+            IPL 2026
+          </span>
+        </div>
       </div>
 
-      {!seasonStarted ? (
+      {loading ? (
+        <div className="rounded-2xl border border-border/50 bg-muted/20 p-5 text-center">
+          <p className="text-xs text-muted-foreground">Loading stats...</p>
+        </div>
+      ) : !seasonStarted ? (
         <div className="rounded-2xl border border-dashed border-border/50 bg-muted/20 p-5 text-center">
           <div className="flex items-center justify-center gap-4 mb-3">
             <span className="text-3xl">🟠</span>
@@ -675,10 +721,10 @@ const SeasonStats: React.FC = () => {
             </div>
             <div className="px-3 pb-3 space-y-1">
               {topBatters.map((p, i) => {
-                const team = IPL_TEAMS.find(t => t.id === p.teamId);
-                const tc = TEAM_COLORS[p.teamId];
+                const team = IPL_TEAMS.find(t => t.id === p.team_id);
+                const tc = TEAM_COLORS[p.team_id];
                 return (
-                  <div key={p.name} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${i === 0 ? 'bg-orange-500/10 border border-orange-500/20' : 'hover:bg-muted/30'}`}>
+                  <div key={p.player_name} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${i === 0 ? 'bg-orange-500/10 border border-orange-500/20' : 'hover:bg-muted/30'}`}>
                     <span className={`w-5 text-center font-rajdhani font-black text-xs ${i === 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
                       {i === 0 ? '👑' : `#${i + 1}`}
                     </span>
@@ -686,8 +732,8 @@ const SeasonStats: React.FC = () => {
                       {team?.emoji}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-xs font-bold truncate ${i === 0 ? 'text-orange-400' : ''}`}>{p.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{team?.shortName} · {p.matches}M · SR {p.strikeRate}</div>
+                      <div className={`text-xs font-bold truncate ${i === 0 ? 'text-orange-400' : ''}`}>{p.player_name}</div>
+                      <div className="text-[10px] text-muted-foreground">{team?.shortName} · {p.matches}M · SR {p.strike_rate}</div>
                     </div>
                     <div className="text-right shrink-0">
                       <div className={`font-rajdhani font-black text-sm ${i === 0 ? 'text-orange-400' : ''}`}>{p.runs}</div>
@@ -707,10 +753,10 @@ const SeasonStats: React.FC = () => {
             </div>
             <div className="px-3 pb-3 space-y-1">
               {topBowlers.map((p, i) => {
-                const team = IPL_TEAMS.find(t => t.id === p.teamId);
-                const tc = TEAM_COLORS[p.teamId];
+                const team = IPL_TEAMS.find(t => t.id === p.team_id);
+                const tc = TEAM_COLORS[p.team_id];
                 return (
-                  <div key={p.name} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${i === 0 ? 'bg-purple-500/10 border border-purple-500/20' : 'hover:bg-muted/30'}`}>
+                  <div key={p.player_name} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl ${i === 0 ? 'bg-purple-500/10 border border-purple-500/20' : 'hover:bg-muted/30'}`}>
                     <span className={`w-5 text-center font-rajdhani font-black text-xs ${i === 0 ? 'text-purple-400' : 'text-muted-foreground'}`}>
                       {i === 0 ? '👑' : `#${i + 1}`}
                     </span>
@@ -718,7 +764,7 @@ const SeasonStats: React.FC = () => {
                       {team?.emoji}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-xs font-bold truncate ${i === 0 ? 'text-purple-400' : ''}`}>{p.name}</div>
+                      <div className={`text-xs font-bold truncate ${i === 0 ? 'text-purple-400' : ''}`}>{p.player_name}</div>
                       <div className="text-[10px] text-muted-foreground">{team?.shortName} · {p.matches}M · Eco {p.economy}</div>
                     </div>
                     <div className="text-right shrink-0">
@@ -954,7 +1000,7 @@ const Dashboard: React.FC = () => {
         <PointsTable favTeamId={favTeamId} computedPoints={computedPoints} />
 
         {/* ── Season Stats: Orange & Purple Cap ────────────────── */}
-        <SeasonStats />
+        <SeasonStats onRefresh={triggerSync} />
 
 
         <div className="lg:grid lg:grid-cols-5 lg:gap-6">

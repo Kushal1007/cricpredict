@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const CRICAPI_BASE = "https://api.cricapi.com/v1";
+const IPL_SERIES_ID = "87c62aac-bc3c-4738-ab93-19da0690488f"; // IPL 2026
 
 // Map CricAPI team names to local team IDs
 const TEAM_ID_MAP: Record<string, string> = {
@@ -25,18 +26,10 @@ const TEAM_ID_MAP: Record<string, string> = {
 function resolveTeamId(teamName: string): string {
   const lower = teamName.toLowerCase().trim();
   if (TEAM_ID_MAP[lower]) return TEAM_ID_MAP[lower];
-  // Fuzzy
   for (const [key, id] of Object.entries(TEAM_ID_MAP)) {
     if (lower.includes(key.split(" ")[0]) && lower.includes(key.split(" ").pop()!)) return id;
   }
   return lower.slice(0, 3);
-}
-
-function classifyRole(player: any): string {
-  const role = (player.role || player.playingRole || "").toLowerCase();
-  if (role.includes("bowl")) return "bowl";
-  if (role.includes("all")) return "all";
-  return "bat";
 }
 
 Deno.serve(async (req) => {
@@ -57,147 +50,37 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Step 1: Find the IPL 2026 series ID
-    const searchRes = await fetch(
-      `${CRICAPI_BASE}/series?apikey=${cricApiKey}&offset=0&search=Indian Premier League`
+    // Fetch points table from CricAPI
+    const pointsRes = await fetch(
+      `${CRICAPI_BASE}/series_points?apikey=${cricApiKey}&id=${IPL_SERIES_ID}`
     );
-    const searchJson = await searchRes.json();
+    const pointsJson = await pointsRes.json();
 
-    if (searchJson.status !== "success" || !searchJson.data?.length) {
-      console.error("Series search failed:", searchJson);
-      return new Response(JSON.stringify({ error: "Could not find IPL series", detail: searchJson.info || searchJson.reason }), {
+    if (pointsJson.status !== "success" || !pointsJson.data?.length) {
+      console.error("Points table fetch failed:", pointsJson);
+      return new Response(JSON.stringify({ error: "Could not fetch points table", detail: pointsJson.info || pointsJson.reason }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Find IPL 2026 (or most recent IPL)
-    const currentYear = new Date().getUTCFullYear();
-    const iplSeries = searchJson.data.find((s: any) => {
-      const name = (s.name || s.seriesName || "").toLowerCase();
-      return (
-        name.includes("indian premier league") &&
-        (name.includes(String(currentYear)) || name.includes("ipl"))
-      );
-    }) || searchJson.data[0];
+    console.log(`CricAPI points table fetched: ${pointsJson.data.length} teams`);
 
-    const seriesId = iplSeries?.id || iplSeries?.seriesId;
-    if (!seriesId) {
-      return new Response(JSON.stringify({ error: "No IPL series ID found" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Fetch match list for completed matches with detailed info
+    const seriesRes = await fetch(
+      `${CRICAPI_BASE}/series_info?apikey=${cricApiKey}&id=${IPL_SERIES_ID}&offset=0`
+    );
+    const seriesJson = await seriesRes.json();
+    const matchList = seriesJson.data?.matchList || [];
+    const completedMatches = matchList.filter((m: any) => m.matchEnded);
 
-    console.log(`Found IPL series: ${iplSeries.name || iplSeries.seriesName}, ID: ${seriesId}`);
-
-    // Step 2: Fetch player statistics for the series
-    // Try both "batting" and "bowling" stat types
-    const [battingRes, bowlingRes] = await Promise.all([
-      fetch(`${CRICAPI_BASE}/series_statistics?apikey=${cricApiKey}&id=${seriesId}&statsType=batting`),
-      fetch(`${CRICAPI_BASE}/series_statistics?apikey=${cricApiKey}&id=${seriesId}&statsType=bowling`),
-    ]);
-
-    const battingJson = await battingRes.json();
-    const bowlingJson = await bowlingRes.json();
-
-    console.log("Batting stats status:", battingJson.status, "count:", battingJson.data?.length || 0);
-    console.log("Bowling stats status:", bowlingJson.status, "count:", bowlingJson.data?.length || 0);
-
-    const playerMap = new Map<string, any>();
-
-    // Process batting stats
-    if (battingJson.status === "success" && battingJson.data) {
-      for (const p of battingJson.data.slice(0, 30)) {
-        const name = p.name || p.playerName || "";
-        const teamName = p.team || p.teamName || "";
-        const teamId = resolveTeamId(teamName);
-        const key = `${name}__${teamId}`;
-
-        playerMap.set(key, {
-          player_name: name,
-          team_id: teamId,
-          role: classifyRole(p),
-          matches: parseInt(p.matches || p.mat || "0") || 0,
-          runs: parseInt(p.runs || "0") || 0,
-          innings: parseInt(p.innings || p.inns || "0") || 0,
-          high_score: parseInt(String(p.highScore || p.hs || "0").replace("*", "")) || 0,
-          average: parseFloat(p.average || p.avg || "0") || 0,
-          strike_rate: parseFloat(p.strikeRate || p.sr || "0") || 0,
-          fifties: parseInt(p.fifties || p["50s"] || p.fifty || "0") || 0,
-          hundreds: parseInt(p.hundreds || p["100s"] || p.hundred || "0") || 0,
-          fours: parseInt(p.fours || p["4s"] || "0") || 0,
-          sixes: parseInt(p.sixes || p["6s"] || "0") || 0,
-          wickets: 0,
-          bowling_innings: 0,
-          economy: 0,
-          best_figures: "-",
-          five_wickets: 0,
-          season: currentYear,
-          last_updated_at: new Date().toISOString(),
-        });
-      }
-    }
-
-    // Process bowling stats
-    if (bowlingJson.status === "success" && bowlingJson.data) {
-      for (const p of bowlingJson.data.slice(0, 30)) {
-        const name = p.name || p.playerName || "";
-        const teamName = p.team || p.teamName || "";
-        const teamId = resolveTeamId(teamName);
-        const key = `${name}__${teamId}`;
-
-        const existing = playerMap.get(key) || {
-          player_name: name,
-          team_id: teamId,
-          role: classifyRole(p),
-          matches: parseInt(p.matches || p.mat || "0") || 0,
-          runs: 0,
-          innings: 0,
-          high_score: 0,
-          average: 0,
-          strike_rate: 0,
-          fifties: 0,
-          hundreds: 0,
-          fours: 0,
-          sixes: 0,
-          season: currentYear,
-          last_updated_at: new Date().toISOString(),
-        };
-
-        existing.wickets = parseInt(p.wickets || p.wkts || "0") || 0;
-        existing.bowling_innings = parseInt(p.innings || p.inns || "0") || 0;
-        existing.economy = parseFloat(p.economy || p.econ || "0") || 0;
-        existing.best_figures = p.bestFigures || p.bbi || p.best || "-";
-        existing.five_wickets = parseInt(p.fiveWickets || p["5w"] || "0") || 0;
-        if (existing.wickets > 0 && existing.runs === 0) existing.role = "bowl";
-        if (existing.wickets > 0 && existing.runs > 0) existing.role = "all";
-
-        playerMap.set(key, existing);
-      }
-    }
-
-    // Step 3: Upsert into database
-    let synced = 0;
-    for (const stats of playerMap.values()) {
-      const { error } = await supabase
-        .from("player_season_stats")
-        .upsert(stats, { onConflict: "player_name,team_id,season" });
-
-      if (error) {
-        console.error(`Upsert error for ${stats.player_name}:`, error);
-      } else {
-        synced++;
-      }
-    }
+    console.log(`Completed matches: ${completedMatches.length}`);
 
     return new Response(JSON.stringify({
       ok: true,
-      seriesId,
-      seriesName: iplSeries.name || iplSeries.seriesName,
-      battingCount: battingJson.data?.length || 0,
-      bowlingCount: bowlingJson.data?.length || 0,
-      synced,
+      pointsTable: pointsJson.data,
+      completedMatchCount: completedMatches.length,
+      totalMatches: matchList.length,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

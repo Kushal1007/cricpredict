@@ -28,7 +28,7 @@ export interface LiveMatch {
 
 // Only allow one sync call across all hook instances within this window
 let lastSyncTime = 0;
-const SYNC_COOLDOWN_MS = 120_000; // 2 minutes
+const SYNC_COOLDOWN_MS = 30_000; // 30 seconds cooldown for manual refresh
 
 export function useLiveMatches() {
   const [matches, setMatches] = useState<LiveMatch[]>([]);
